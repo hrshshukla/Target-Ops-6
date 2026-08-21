@@ -17,6 +17,14 @@ export function ProfileForm() {
   const [profilePictureUrl, setProfilePictureUrl] = useState(user?.profilePictureUrl ?? "");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name);
+    setEmail(user.email ?? "");
+    setMobileNumber(normalizeMobileNumber(user.mobileNumber ?? ""));
+    setProfilePictureUrl(user.profilePictureUrl ?? "");
+  }, [user]);
+
   const chooseImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
@@ -41,7 +49,16 @@ export function ProfileForm() {
   const saveProfile = async () => {
     try {
       setSaving(true);
-      const next = await updateProfile({ name, email, mobileNumber: mobileNumber || null, profilePictureUrl: profilePictureUrl || null });
+      const next = await updateProfile({
+        name: name.trim(),
+        email: email.trim(),
+        mobileNumber: mobileNumber || null,
+        profilePictureUrl: profilePictureUrl || null,
+      });
+      setName(next.name);
+      setEmail(next.email ?? "");
+      setMobileNumber(normalizeMobileNumber(next.mobileNumber ?? ""));
+      setProfilePictureUrl(next.profilePictureUrl ?? "");
       updateUser(next);
       Alert.alert("Saved", "Your profile was updated.");
     } catch (error) {
