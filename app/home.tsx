@@ -115,10 +115,6 @@ function AccountSheet({ data, year, month, loading, error, retry, onMonthChange 
   return (
     <View style={styles.sheet}>
       <View style={styles.sheetHeading}>
-        <View>
-          <Text style={[styles.sheetTitle, { color: colors.foreground }]}>ACCOUNT SHEET</Text>
-          <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]}>Financial snapshot · admin only</Text>
-        </View>
         <View style={[styles.monthControls, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable onPress={() => onMonthChange(-1)} hitSlop={10} accessibilityLabel="Previous month"><Feather name="chevron-left" size={18} color={colors.foreground} /></Pressable>
           <Text style={[styles.monthLabel, { color: colors.foreground }]}>{monthLabel}</Text>
@@ -163,9 +159,7 @@ const styles = StyleSheet.create({
   companyName: { ...fonts.bold, fontSize: 14, lineHeight: 19 },
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 },
   employeeCount: { ...fonts.medium, fontSize: 11 },
-  sheetHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 },
-  sheetTitle: { ...fonts.bold, fontSize: 20 },
-  sheetSubtitle: { ...fonts.regular, fontSize: 12, marginTop: 3 },
+  sheetHeading: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 15 },
   monthBadge: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   sheet: { flexGrow: 0, flexShrink: 1 },
   tableWrap: { flexGrow: 0, flexShrink: 1, borderRadius: 18, overflow: "hidden", borderWidth: 1 },
