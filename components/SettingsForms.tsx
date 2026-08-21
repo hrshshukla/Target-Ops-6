@@ -63,7 +63,11 @@ export function DocumentsForm() {
   const [document, setDocument] = useState<UserDocument | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { getDocuments().then((items) => setDocument(items[0] ?? null)).catch(() => undefined); }, []);
+  useEffect(() => {
+    getDocuments()
+      .then((items) => setDocument((current) => current ?? items[0] ?? null))
+      .catch(() => undefined);
+  }, []);
 
   const chooseImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.8 });
