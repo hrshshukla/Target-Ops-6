@@ -120,7 +120,7 @@ export default function CreateAccountScreen() {
         />
         <PrimaryButton
           label={
-            submitting ? "Creating account..." : "Create Security Guard account"
+            submitting ? "Creating account..." : "Create account"
           }
           icon="user-plus"
           onPress={() => void submit()}

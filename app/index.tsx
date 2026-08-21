@@ -92,7 +92,7 @@ export default function LoginScreen() {
           value={identifier}
           onChangeText={setIdentifier}
           keyboardType="default"
-          placeholder="phone or email"
+          placeholder="Phone or Email"
         />
         <Field
           label="Password"
@@ -117,12 +117,6 @@ export default function LoginScreen() {
           Create new account
         </Text>
       </Pressable>
-      <View style={styles.demoRow}>
-        <Feather name="info" size={14} color={colors.mutedForeground} />
-        <Text style={[styles.demoText, { color: colors.mutedForeground }]}>
-          Use your company credentials to continue.
-        </Text>
-      </View>
     </KeyboardAwareScrollViewCompat>
   );
 }
