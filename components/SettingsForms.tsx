@@ -61,6 +61,7 @@ export function ProfileForm() {
 export function DocumentsForm() {
   const colors = useColors();
   const [document, setDocument] = useState<UserDocument | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => { getDocuments().then((items) => setDocument(items[0] ?? null)).catch(() => undefined); }, []);
 
@@ -70,8 +71,10 @@ export function DocumentsForm() {
     const asset = result.assets[0];
     try {
       setSaving(true);
+      setPreviewUri(asset.uri);
       const url = await uploadImageToImageKit(asset.uri, `aadhaar-${Date.now()}.jpg`, asset.mimeType ?? "image/jpeg");
       setDocument(await saveAadhaar(url));
+      setPreviewUri(null);
       Alert.alert("Saved", "Your Aadhaar image was saved.");
     } catch (error) {
       Alert.alert("Upload failed", error instanceof Error ? error.message : "Unable to upload image.");
@@ -81,8 +84,16 @@ export function DocumentsForm() {
   return (
     <>
       <Text style={[styles.help, { color: colors.mutedForeground }]}>Upload your Aadhaar Card photo only. PDF files are not accepted.</Text>
-      {document ? <Image source={{ uri: document.imageUrl }} style={styles.document} /> : null}
-      <PrimaryButton label={document ? "Replace Aadhaar photo" : "Upload Aadhaar photo"} icon="upload" onPress={() => void chooseImage()} disabled={saving} />
+      {previewUri || document ? (
+        <Image source={{ uri: previewUri ?? document?.imageUrl }} style={styles.document} />
+      ) : null}
+      <PrimaryButton
+        label={saving ? "Uploading Aadhaar photo..." : document ? "Replace Aadhaar photo" : "Upload Aadhaar photo"}
+        icon="upload"
+        onPress={() => void chooseImage()}
+        disabled={saving}
+        loading={saving}
+      />
     </>
   );
 }

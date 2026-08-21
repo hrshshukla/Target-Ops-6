@@ -150,11 +150,13 @@ export function PrimaryButton({
   onPress,
   icon,
   disabled = false,
+  loading = false,
 }: {
   label: string;
   onPress: () => void;
   icon?: keyof typeof Feather.glyphMap;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   const colors = useColors();
   return (
@@ -170,7 +172,9 @@ export function PrimaryButton({
       ]}
       testID={`button-${label}`}
     >
-      {icon ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.primaryForeground} />
+      ) : icon ? (
         <Feather name={icon} size={17} color={colors.primaryForeground} />
       ) : null}
       <Text
