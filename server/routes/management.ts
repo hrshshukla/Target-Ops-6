@@ -490,8 +490,12 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
       [body.identifier],
     );
     const row = result.rows[0];
-    if (!row || !verifyPassword(body.password, row.password_hash)) {
-      sendError(res, 401, "INVALID_CREDENTIALS", "Email or password is incorrect.");
+    if (!row) {
+      sendError(res, 401, "ACCOUNT_NOT_FOUND", "No account exists with this phone number or email.");
+      return true;
+    }
+    if (!verifyPassword(body.password, row.password_hash)) {
+      sendError(res, 401, "INVALID_PASSWORD", "Password is incorrect.");
       return true;
     }
     if (row.role === "SECURITY_GUARD" && row.mobile_number !== body.identifier) {
