@@ -27,8 +27,16 @@ export default function CreateAccountScreen() {
 
   const submit = async () => {
     const code = companyCode.trim().toUpperCase();
-    if (!name.trim() || !/^\d{10}$/.test(phoneNumber) || !code || password.length < 8) {
-      Alert.alert("Incomplete details", "Enter all required fields. Password must be at least 8 characters.");
+    if (
+      !name.trim() ||
+      !/^\d{10}$/.test(phoneNumber) ||
+      !code ||
+      password.length < 8
+    ) {
+      Alert.alert(
+        "Incomplete details",
+        "Enter all required fields. Password must be at least 8 characters.",
+      );
       return;
     }
     if (!COMPANY_CODES.some(([value]) => value === code)) {
@@ -37,12 +45,24 @@ export default function CreateAccountScreen() {
     }
     try {
       setSubmitting(true);
-      await registerGuard({ name: name.trim(), phoneNumber, email: email.trim(), age: age ? Number(age) : undefined, companyCode: code, password });
-      Alert.alert("Account created", "Your Security Guard account is ready. Sign in with your phone number.", [
-        { text: "Sign in", onPress: () => router.replace("/") },
-      ]);
+      await registerGuard({
+        name: name.trim(),
+        phoneNumber,
+        email: email.trim(),
+        age: age ? Number(age) : undefined,
+        companyCode: code,
+        password,
+      });
+      Alert.alert(
+        "Account created",
+        "Your Security Guard account is ready. Sign in with your phone number.",
+        [{ text: "Sign in", onPress: () => router.replace("/") }],
+      );
     } catch (error) {
-      Alert.alert("Unable to create account", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(
+        "Unable to create account",
+        error instanceof Error ? error.message : "Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -50,28 +70,82 @@ export default function CreateAccountScreen() {
 
   return (
     <Screen>
-      <Header title="Create New Account" subtitle="Security Guard account" back />
-      <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-        New accounts created here are Security Guards. Use your phone number and password to sign in.
-      </Text>
+      <Header
+        title="Create New Account"
+        subtitle="Security Guard account"
+        back
+      />
       <View style={styles.form}>
-        <Field label="Name *" value={name} onChangeText={setName} placeholder="Full name" />
-        <Field label="Phone Number *" value={phoneNumber} onChangeText={(value) => setPhoneNumber(value.replace(/\D/g, "").slice(0, 10))} keyboardType="phone-pad" placeholder="10-digit phone number" />
-        <Field label="Email (optional)" value={email} onChangeText={setEmail} keyboardType="default" placeholder="name@company.com" />
-        <Field label="Age (optional)" value={age} onChangeText={(value) => setAge(value.replace(/\D/g, "").slice(0, 3))} keyboardType="numeric" placeholder="18 or above" />
-        <Field label="Company Code *" value={companyCode} onChangeText={setCompanyCode} placeholder="ISF, TIS, TSSM, TISF, or KE" />
-        <Text style={[styles.codes, { color: colors.mutedForeground }]}>
-          {COMPANY_CODES.map(([code, company]) => `${code} → ${company}`).join("\n")}
-        </Text>
-        <Field label="Password *" value={password} onChangeText={setPassword} secureTextEntry placeholder="At least 8 characters" />
-        <PrimaryButton label={submitting ? "Creating account..." : "Create Security Guard account"} icon="user-plus" onPress={() => void submit()} disabled={submitting} loading={submitting} />
+        <Field
+          label="Name *"
+          value={name}
+          onChangeText={setName}
+          placeholder="Full name"
+        />
+        <Field
+          label="Phone Number *"
+          value={phoneNumber}
+          onChangeText={(value) =>
+            setPhoneNumber(value.replace(/\D/g, "").slice(0, 10))
+          }
+          keyboardType="phone-pad"
+          placeholder="10-digit phone number"
+        />
+        <Field
+          label="Email (optional)"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="default"
+          placeholder="name@company.com"
+        />
+        <Field
+          label="Age"
+          value={age}
+          onChangeText={(value) => setAge(value.replace(/\D/g, "").slice(0, 3))}
+          keyboardType="numeric"
+          placeholder="18 or above"
+        />
+        <Field
+          label="Company Code *"
+          value={companyCode}
+          onChangeText={setCompanyCode}
+          placeholder="ISF, TIS, TSSM, TISF, or KE"
+        />
+        <Field
+          label="Password *"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="At least 8 characters"
+        />
+        <PrimaryButton
+          label={
+            submitting ? "Creating account..." : "Create Security Guard account"
+          }
+          icon="user-plus"
+          onPress={() => void submit()}
+          disabled={submitting}
+          loading={submitting}
+        />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  intro: { ...fonts.regular, fontSize: 13, lineHeight: 20, marginTop: 10, marginBottom: 18 },
+  intro: {
+    ...fonts.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 10,
+    marginBottom: 18,
+  },
   form: { gap: 2 },
-  codes: { ...fonts.regular, fontSize: 11, lineHeight: 17, marginTop: -2, marginBottom: 10 },
+  codes: {
+    ...fonts.regular,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: -2,
+    marginBottom: 10,
+  },
 });
