@@ -3,8 +3,8 @@ name: Neon database setup
 description: External PostgreSQL setup needed by the Target Ops API
 ---
 
-The API expects its existing relational schema to already exist in the remote PostgreSQL database; a newly provisioned Neon database starts empty and must receive those tables before login can seed data.
+The API now initializes its required relational tables before login seeding; a newly provisioned external PostgreSQL database can still need a first authenticated request to complete initialization.
 
-**Why:** The API intentionally uses the remote database and does not run schema creation automatically at request time.
+**Why:** An empty database caused login to fail before upload authentication could run, so startup/request initialization must precede seed inserts.
 
-**How to apply:** When switching to a new external database, apply the current project schema first, then verify login and read APIs.
+**How to apply:** When switching databases, verify `/api/health`, then log in once and confirm the settings/upload auth route responds before testing uploads.

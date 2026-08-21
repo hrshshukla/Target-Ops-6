@@ -48,7 +48,9 @@ export async function uploadImageToImageKit(uri: string, fileName: string, mimeT
   const auth = await getImageKitAuth();
   const form = new FormData();
   if (Platform.OS === "web") {
-    const blob = await (await fetch(uri)).blob();
+    const source = await fetch(uri);
+    if (!source.ok) throw new Error("The selected file could not be read.");
+    const blob = await source.blob();
     form.append("file", blob, fileName);
   } else {
     form.append("file", { uri, name: fileName, type: mimeType } as unknown as Blob);
@@ -63,8 +65,14 @@ export async function uploadImageToImageKit(uri: string, fileName: string, mimeT
     method: "POST",
     body: form,
   });
-  if (!response.ok) throw new Error("Image upload failed.");
-  const result = await response.json() as { url?: string };
-  if (!result.url) throw new Error("Image upload returned no URL.");
+  const result = await response.json().catch(() => null) as {
+    url?: string;
+    message?: string;
+    error?: string;
+  } | null;
+  if (!response.ok) {
+    throw new Error(result?.message ?? result?.error ?? `ImageKit upload failed (HTTP ${response.status}).`);
+  }
+  if (!result?.url) throw new Error("ImageKit upload returned no URL.");
   return result.url;
 }

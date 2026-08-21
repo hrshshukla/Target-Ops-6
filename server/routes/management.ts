@@ -109,6 +109,7 @@ function parseMonthYear(req: ApiRequest, res: ApiResponse) {
 }
 
 async function ensureSeed() {
+  await ensureSchema();
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number TEXT`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture_url TEXT`);
   await pool.query(`CREATE TABLE IF NOT EXISTS user_documents (
@@ -206,6 +207,64 @@ async function ensureSeed() {
       [`account-2026-06-${companyId}`, companyId, billing, receiving, cash, salary, expense, dressStock],
     );
   }
+}
+
+async function ensureSchema() {
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL,
+      mobile_number TEXT, profile_picture_url TEXT, password_hash TEXT NOT NULL,
+      role TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email)`,
+    `CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS companies (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, logo_url TEXT, gst TEXT NOT NULL DEFAULT '—',
+      account_no TEXT NOT NULL DEFAULT '—', office_number TEXT NOT NULL DEFAULT '—',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS company_assignments (
+      user_id TEXT NOT NULL, company_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS employees (
+      id TEXT PRIMARY KEY, company_id TEXT NOT NULL, employee_number TEXT NOT NULL,
+      id_card TEXT NOT NULL, name TEXT NOT NULL, contact TEXT NOT NULL,
+      salary NUMERIC NOT NULL DEFAULT 0, site TEXT NOT NULL, role TEXT NOT NULL,
+      basic_salary NUMERIC NOT NULL DEFAULT 0, allowances NUMERIC NOT NULL DEFAULT 0,
+      overtime NUMERIC NOT NULL DEFAULT 0, pf NUMERIC NOT NULL DEFAULT 0,
+      esic NUMERIC NOT NULL DEFAULT 0, profile_picture_url TEXT,
+      date_of_joining DATE NOT NULL, deleted_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS employees_number_idx ON employees (employee_number)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS employees_id_card_idx ON employees (id_card)`,
+    `CREATE TABLE IF NOT EXISTS attendance (
+      id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, date DATE NOT NULL, status TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS salary_records (
+      id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, month INTEGER NOT NULL, year INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS salary_transactions (
+      id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, type TEXT NOT NULL, amount NUMERIC NOT NULL,
+      note TEXT NOT NULL, month INTEGER NOT NULL, year INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS account_sheets (
+      id TEXT PRIMARY KEY, company_id TEXT NOT NULL, month INTEGER NOT NULL, year INTEGER NOT NULL,
+      total_billing NUMERIC NOT NULL DEFAULT 0, total_receiving NUMERIC NOT NULL DEFAULT 0,
+      cash_received NUMERIC NOT NULL DEFAULT 0, salary NUMERIC NOT NULL DEFAULT 0,
+      expense NUMERIC NOT NULL DEFAULT 0, dress_stock NUMERIC NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+  ];
+  for (const statement of statements) await pool.query(statement);
 }
 
 

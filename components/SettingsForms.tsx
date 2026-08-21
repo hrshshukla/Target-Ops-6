@@ -25,7 +25,14 @@ export function ProfileForm() {
       setSaving(true);
       const url = await uploadImageToImageKit(asset.uri, `profile-${Date.now()}.jpg`, asset.mimeType ?? "image/jpeg");
       setProfilePictureUrl(url);
-      Alert.alert("Uploaded", "Save your profile to apply the new picture.");
+      const next = await updateProfile({
+        name,
+        email,
+        mobileNumber: mobileNumber || null,
+        profilePictureUrl: url,
+      });
+      updateUser(next);
+      Alert.alert("Uploaded", "Your profile picture was saved.");
     } catch (error) {
       Alert.alert("Upload failed", error instanceof Error ? error.message : "Unable to upload image.");
     } finally { setSaving(false); }
@@ -105,15 +112,15 @@ export function DocumentsForm() {
       {previewUri || document ? (
         <Image source={{ uri: previewUri ?? document?.imageUrl }} style={styles.document} />
       ) : null}
-      {!document && !previewUri ? (
+      {!previewUri ? (
         <PrimaryButton
-          label="Upload Aadhaar photo"
+          label={document ? "Replace Aadhaar photo" : "Upload Aadhaar photo"}
           icon="upload"
           onPress={() => void chooseImage()}
           disabled={saving}
         />
       ) : null}
-      {!document && previewUri ? (
+      {previewUri ? (
         <PrimaryButton
           label={saving ? "Saving Aadhaar photo..." : "Save Aadhaar photo"}
           icon="check"
