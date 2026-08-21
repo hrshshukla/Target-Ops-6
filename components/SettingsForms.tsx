@@ -153,8 +153,8 @@ export function PasswordForm() {
 }
 
 const styles = StyleSheet.create({
-  profileRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 16 },
-  avatar: { width: 74, height: 74, borderRadius: 24 },
+  profileRow: { alignItems: "center", gap: 14, marginBottom: 20 },
+  avatar: { width: 120, height: 120, borderRadius: 60 },
   avatarFallback: { alignItems: "center", justifyContent: "center" },
   document: { width: "100%", height: 190, borderRadius: 18, marginVertical: 12 },
   help: { ...fonts.regular, fontSize: 12, lineHeight: 18, marginBottom: 15 },
