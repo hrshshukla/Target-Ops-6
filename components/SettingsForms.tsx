@@ -72,11 +72,14 @@ export function DocumentsForm() {
   const chooseImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
+    setPreviewUri(result.assets[0].uri);
+  };
+
+  const saveDocument = async () => {
+    if (!previewUri) return;
     try {
       setSaving(true);
-      setPreviewUri(asset.uri);
-      const url = await uploadImageToImageKit(asset.uri, `aadhaar-${Date.now()}.jpg`, asset.mimeType ?? "image/jpeg");
+      const url = await uploadImageToImageKit(previewUri, `aadhaar-${Date.now()}.jpg`, "image/jpeg");
       setDocument(await saveAadhaar(url));
       setPreviewUri(null);
       Alert.alert("Saved", "Your Aadhaar image was saved.");
@@ -91,11 +94,19 @@ export function DocumentsForm() {
       {previewUri || document ? (
         <Image source={{ uri: previewUri ?? document?.imageUrl }} style={styles.document} />
       ) : null}
-      {!document || saving ? (
+      {!document && !previewUri ? (
         <PrimaryButton
           label="Upload Aadhaar photo"
           icon="upload"
           onPress={() => void chooseImage()}
+          disabled={saving}
+        />
+      ) : null}
+      {!document && previewUri ? (
+        <PrimaryButton
+          label={saving ? "Saving Aadhaar photo..." : "Save Aadhaar photo"}
+          icon="check"
+          onPress={() => void saveDocument()}
           disabled={saving}
           loading={saving}
         />
