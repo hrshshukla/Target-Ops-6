@@ -20,7 +20,8 @@ export default function HomeScreen() {
   const companies = useListCompanies({ query: { enabled: !!user && user.role !== "SECURITY_GUARD" } });
   const account = useGetAccountSheet(accountMonth.year, accountMonth.month, { query: { enabled: admin && section === "Account Sheet" } });
   const data = useMemo<Company[]>(() => {
-    const companiesById = new Map((companies.data ?? []).map((item) => [item.id, item]));
+    const companyItems = Array.isArray(companies.data) ? companies.data : [];
+    const companiesById = new Map(companyItems.map((item) => [item.id, item]));
     return COMPANY_CATALOG.map((catalog) => companiesById.get(catalog.id) ?? {
       id: catalog.id,
       name: catalog.name,
