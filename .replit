@@ -1,0 +1,67 @@
+modules = ["nodejs-20"]
+
+[nix]
+channel = "stable-25_05"
+
+[agent]
+expertMode = true
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Expo development server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Local Vercel API"
+
+[[workflows.workflow]]
+name = "Expo development server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx expo start --web --port 8081"
+waitForPort = 8081
+
+[[workflows.workflow]]
+name = "Local Vercel API"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run api:dev"
+waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_API_URL = "https://target-ops-6.vercel.app"
+IMAGEKIT_PRIVATE_KEY = "private_t7UtmyKsgSpU2/t5QP/M0ZYDZzM="
+IMAGEKIT_PUBLIC_KEY = "public_q8lG84hHtml+BPIGve/2DQxnmdc="
+IMAGEKIT_URL_ENDPOINT = "https://ik.imagekit.io/hrshshukladev"

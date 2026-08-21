@@ -1,0 +1,3 @@
+- [Local Vercel development](vercel-local-auth.md) — use Vercel local mode and API-only build settings so the imported Expo project runs without Vercel account auth.
+- [Neon database setup](neon-schema.md) — a new external PostgreSQL database needs the existing tables before the API seed/login flow can run.
+- [Expo web API host](expo-web-api-host.md) — the web preview cannot reach the Android emulator host, so local development maps 10.0.2.2 to 127.0.0.1 only on web.
