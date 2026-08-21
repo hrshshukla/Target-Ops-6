@@ -87,13 +87,15 @@ export function DocumentsForm() {
       {previewUri || document ? (
         <Image source={{ uri: previewUri ?? document?.imageUrl }} style={styles.document} />
       ) : null}
-      <PrimaryButton
-        label={saving ? "Uploading Aadhaar photo..." : document ? "Replace Aadhaar photo" : "Upload Aadhaar photo"}
-        icon="upload"
-        onPress={() => void chooseImage()}
-        disabled={saving}
-        loading={saving}
-      />
+      {!document || saving ? (
+        <PrimaryButton
+          label="Upload Aadhaar photo"
+          icon="upload"
+          onPress={() => void chooseImage()}
+          disabled={saving}
+          loading={saving}
+        />
+      ) : null}
     </>
   );
 }
