@@ -7,7 +7,7 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (identifier: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (user: User) => void;
 };
@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     token,
     isLoading,
-    signIn: async (email, password) => {
-      const response = await loginRequest({ email, password });
+    signIn: async (identifier, password) => {
+      const response = await loginRequest({ identifier, password });
       await saveToken(response.token);
       setToken(response.token);
       setUser(response.user);

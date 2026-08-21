@@ -9,8 +9,19 @@ type Role = UserRole;
 const money = (value: unknown) => Number(Number(value ?? 0).toFixed(2));
 
 const loginSchema = z.object({
-  email: z.string().trim().email(),
+  identifier: z.string().trim().min(1),
   password: z.string().min(1),
+});
+const guardRegistrationSchema = z.object({
+  name: z.string().trim().min(1),
+  phoneNumber: z.string().trim().regex(/^\d{10}$/, "Phone number must contain 10 digits."),
+  email: z.string().trim().email().optional().or(z.literal("")),
+  age: z.preprocess(
+    (value) => value === "" || value == null ? undefined : value,
+    z.coerce.number().int().min(18).max(100).optional(),
+  ),
+  companyCode: z.string().trim().toUpperCase().min(1),
+  password: z.string().min(8),
 });
 const profileUpdateSchema = z.object({
   name: z.string().trim().min(1),
@@ -70,6 +81,14 @@ const monthYearSchema = z.object({
   month: z.coerce.number().int().min(1).max(12).default(6),
 });
 
+const COMPANY_CATALOG = {
+  ISF: { id: "company-isf", name: "INDUSTRIAL SECURITY FORCE" },
+  TIS: { id: "company-tis", name: "TARGET INDUSTRIAL SECURITY" },
+  TSSM: { id: "company-tssm", name: "TARGET SECURITY SERVICE&MANPOWER" },
+  TISF: { id: "company-tisf", name: "TARGET INDUSTRIAL SECURITY FORCE Pvt Ltd" },
+  KE: { id: "company-ke", name: "KARNIKA ENTERPRISES" },
+} as const;
+
 function hashPassword(password: string) {
   const salt = "target-ops-development-salt";
   return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
@@ -111,6 +130,9 @@ function parseMonthYear(req: ApiRequest, res: ApiResponse) {
 async function ensureSeed() {
   await ensureSchema();
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS age INTEGER`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id TEXT`);
+  await pool.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture_url TEXT`);
   await pool.query(`CREATE TABLE IF NOT EXISTS user_documents (
     id TEXT PRIMARY KEY, user_id TEXT NOT NULL, document_type TEXT NOT NULL,
@@ -213,7 +235,8 @@ async function ensureSchema() {
   const statements = [
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL,
-      mobile_number TEXT, profile_picture_url TEXT, password_hash TEXT NOT NULL,
+      mobile_number TEXT, profile_picture_url TEXT, age INTEGER, company_id TEXT,
+      password_hash TEXT NOT NULL,
       role TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
@@ -461,12 +484,18 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     const body = parseBody(loginSchema, req, res);
     if (!body) return true;
     const result = await pool.query(
-      "SELECT id, name, email, mobile_number, profile_picture_url, role, password_hash FROM users WHERE lower(email) = $1",
-      [body.email.toLowerCase()],
+      `SELECT id, name, email, mobile_number, profile_picture_url, role, password_hash
+       FROM users WHERE lower(COALESCE(email, '')) = lower($1) OR mobile_number = $1
+       LIMIT 1`,
+      [body.identifier],
     );
     const row = result.rows[0];
     if (!row || !verifyPassword(body.password, row.password_hash)) {
       sendError(res, 401, "INVALID_CREDENTIALS", "Email or password is incorrect.");
+      return true;
+    }
+    if (row.role === "SECURITY_GUARD" && row.mobile_number !== body.identifier) {
+      sendError(res, 401, "INVALID_CREDENTIALS", "Security Guards must sign in with their phone number.");
       return true;
     }
     const token = randomBytes(32).toString("hex");
@@ -485,6 +514,67 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
         role: row.role,
       },
     });
+    return true;
+  }
+
+  params = route(req, "POST", "/auth/register-guard");
+  if (params) {
+    req.params = params;
+    await ensureSeed();
+    const body = parseBody(guardRegistrationSchema, req, res);
+    if (!body) return true;
+    const company = COMPANY_CATALOG[body.companyCode as keyof typeof COMPANY_CATALOG];
+    if (!company) {
+      sendError(res, 400, "INVALID_COMPANY_CODE", "Company Code is invalid.");
+      return true;
+    }
+
+    const existing = await pool.query(
+      "SELECT 1 FROM users WHERE mobile_number = $1 OR (email IS NOT NULL AND lower(email) = lower($2)) LIMIT 1",
+      [body.phoneNumber, body.email || null],
+    );
+    if (existing.rowCount) {
+      sendError(res, 409, "ACCOUNT_EXISTS", "That phone number or email is already registered.");
+      return true;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const userId = `user-${randomBytes(8).toString("hex")}`;
+      const employeeId = `employee-${randomBytes(8).toString("hex")}`;
+      const employeeNumber = `EMP-${randomBytes(4).toString("hex").toUpperCase()}`;
+      const idCard = `ID-${randomBytes(4).toString("hex").toUpperCase()}`;
+      await client.query(
+        `INSERT INTO users
+         (id, name, email, mobile_number, age, company_id, password_hash, role)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'SECURITY_GUARD')`,
+        [userId, body.name, body.email || null, body.phoneNumber, body.age ?? null, company.id, hashPassword(body.password)],
+      );
+      await client.query(
+        `INSERT INTO company_assignments (user_id, company_id) VALUES ($1,$2)`,
+        [userId, company.id],
+      );
+      await client.query(
+        `INSERT INTO employees
+         (id, company_id, employee_number, id_card, name, contact, salary, site, role,
+          basic_salary, allowances, overtime, pf, esic, date_of_joining)
+         VALUES ($1,$2,$3,$4,$5,$6,0,'Unassigned','Security Guard',0,0,0,0,0,CURRENT_DATE)`,
+        [employeeId, company.id, employeeNumber, idCard, body.name, body.phoneNumber],
+      );
+      await client.query("COMMIT");
+      res.status(201).json({
+        message: "Security Guard account created.",
+        companyId: company.id,
+        user: { id: userId, name: body.name, role: "SECURITY_GUARD" },
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error({ err: error }, "Guard registration failed");
+      sendError(res, 500, "REGISTRATION_FAILED", "Unable to create the account.");
+    } finally {
+      client.release();
+    }
     return true;
   }
 

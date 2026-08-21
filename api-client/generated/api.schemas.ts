@@ -20,7 +20,7 @@ export interface ErrorResponse {
 }
 
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   /** @minLength 1 */
   password: string;
 }

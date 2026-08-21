@@ -14,7 +14,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isLoading, signIn } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,12 +30,12 @@ export default function LoginScreen() {
   const submit = async () => {
     setSubmitting(true);
     try {
-      await signIn(email, password);
+      await signIn(identifier, password);
       router.replace("/home");
     } catch (error) {
       const message = error instanceof Error && error.message
         ? error.message
-        : "Check your email and password, then try again.";
+        : "Check your phone/email and password, then try again.";
       Alert.alert("Sign in failed", message);
     } finally {
       setSubmitting(false);
@@ -52,10 +52,13 @@ export default function LoginScreen() {
         <Text style={[styles.formTitle, { color: colors.foreground }]}>Welcome back</Text>
         <Text style={[styles.formHint, { color: colors.mutedForeground }]}>Sign in to your operations workspace.</Text>
         <View style={{ height: 18 }} />
-        <Field label="Work email" value={email} onChangeText={setEmail} keyboardType="default" placeholder="name@company.com" />
+        <Field label="Phone number or email" value={identifier} onChangeText={setIdentifier} keyboardType="default" placeholder="9876543210 or name@company.com" />
         <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Enter your password" />
         <PrimaryButton label={submitting ? "Signing in..." : "Sign in"} icon="arrow-right" disabled={submitting} onPress={() => void submit()} />
       </View>
+      <Pressable onPress={() => router.push("/create-account")} style={styles.createLink} accessibilityRole="button">
+        <Text style={[styles.createLinkText, { color: colors.primary }]}>Create new account</Text>
+      </Pressable>
       <View style={styles.demoRow}><Feather name="info" size={14} color={colors.mutedForeground} /><Text style={[styles.demoText, { color: colors.mutedForeground }]}>Use your company credentials to continue.</Text></View>
     </KeyboardAwareScrollViewCompat>
   );
@@ -75,4 +78,6 @@ const styles = StyleSheet.create({
   formHint: { ...fonts.regular, fontSize: 13, marginTop: 5 },
   demoRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 18 },
   demoText: { ...fonts.regular, fontSize: 11 },
+  createLink: { alignItems: "center", marginTop: 18 },
+  createLinkText: { ...fonts.semibold, fontSize: 14 },
 });

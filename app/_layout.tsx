@@ -60,6 +60,7 @@ export default function RootLayout() {
                   }}
                 >
                   <Stack.Screen name="index" />
+                  <Stack.Screen name="create-account" />
                   <Stack.Screen name="home" />
                   <Stack.Screen name="settings" />
                   <Stack.Screen name="settings-profile" />
