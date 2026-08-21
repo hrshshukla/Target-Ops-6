@@ -1,0 +1,68 @@
+
+ WARN  Route "./_layout.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  [Error: Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:
+  - react:                  19.2.8
+  - react-native-renderer:  19.1.4
+Learn more: https://react.dev/warnings/version-mismatch]
+
+Code: _layout.tsx
+  4 | import Constants from "expo-constants";
+  5 | import { setAuthTokenGetter, setBaseUrl } from "@/api-client";
+> 6 | import { GestureHandlerRootView } from "react-native-gesture-handler";
+    | ^
+  7 | import { KeyboardProvider } from "react-native-keyboard-controller";
+  8 | import { SafeAreaProvider } from "react-native-safe-area-context";
+  9 | import { ErrorBoundary } from "@/components/ErrorBoundary";
+Call Stack
+  <global> (app/_layout.tsx:6)
+ WARN  Route "./company/[id].tsx" is missing the required default export. Ensure a React component is exported as default.
+ WARN  Route "./employee/[id].tsx" is missing the required default export. Ensure a React component is exported as default.
+ WARN  Route "./index.tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  [TypeError: _bindings.KeyboardControllerNative.getConstants is not a function (itis undefined)] 
+
+Code: KeyboardAwareScrollViewCompat.tsx
+  1 | import { Platform, ScrollView, ScrollViewProps } from 'react-native';
+> 2 | import {
+    | ^
+  3 |   KeyboardAwareScrollView,
+  4 |   KeyboardAwareScrollViewProps,
+  5 | } from 'react-native-keyboard-controller';
+Call Stack
+  <global> (components/KeyboardAwareScrollViewCompat.tsx:2)
+  <global> (app/company/[id].tsx:19)
+ ERROR  [TypeError: _bindings.KeyboardControllerNative.getConstants is not a function (it is undefined)] 
+
+Code: KeyboardAwareScrollViewCompat.tsx
+  1 | import { Platform, ScrollView, ScrollViewProps } from 'react-native';
+> 2 | import {
+    | ^
+  3 |   KeyboardAwareScrollView,
+  4 |   KeyboardAwareScrollViewProps,
+  5 | } from 'react-native-keyboard-controller';
+Call Stack
+  <global> (components/KeyboardAwareScrollViewCompat.tsx:2)
+  <global> (app/company/[id].tsx:19)
+ ERROR  [TypeError: _bindings.KeyboardControllerNative.getConstants is not a function (it is undefined)] 
+
+Code: KeyboardAwareScrollViewCompat.tsx
+  1 | import { Platform, ScrollView, ScrollViewProps } from 'react-native';
+> 2 | import {
+    | ^
+  3 |   KeyboardAwareScrollView,
+  4 |   KeyboardAwareScrollViewProps,
+  5 | } from 'react-native-keyboard-controller';
+Call Stack
+  <global> (components/KeyboardAwareScrollViewCompat.tsx:2)
+  <global> (app/company/[id].tsx:19)
+ ERROR  [Error: useAuth must be used within AuthProvider] 
+
+Code: AuthContext.tsx
+  68 | export function useAuth() {
+  69 |   const value = useContext(AuthContext);
+> 70 |   if (!value) throw new Error("useAuth must be used within AuthProvider");
+     |                              ^
+  71 |   return value;
+  72 | }
+Call Stack
+  useAuth (context/AuthContext.tsx:70:30)
+  HomeScreen (app/home.tsx:16:27)
