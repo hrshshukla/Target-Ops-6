@@ -227,6 +227,7 @@ export function Field({
   placeholder,
   keyboardType = "default",
   secureTextEntry = false,
+  prefix,
 }: {
   label: string;
   value: string;
@@ -234,6 +235,7 @@ export function Field({
   placeholder?: string;
   keyboardType?: "default" | "numeric" | "phone-pad";
   secureTextEntry?: boolean;
+  prefix?: string;
 }) {
   const colors = useColors();
   const [isPasswordVisible, setPasswordVisible] = useState(false);
@@ -248,6 +250,11 @@ export function Field({
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
+        {prefix ? (
+          <View style={[styles.fieldPrefix, { borderRightColor: colors.border }]}>
+            <Text style={[styles.fieldPrefixText, { color: colors.mutedForeground }]}>{prefix}</Text>
+          </View>
+        ) : null}
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -462,6 +469,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 15,
   },
+  fieldPrefix: {
+    height: "100%",
+    justifyContent: "center",
+    paddingHorizontal: 15,
+    borderRightWidth: 1,
+  },
+  fieldPrefixText: { ...fonts.medium, fontSize: 15 },
   passwordVisibilityButton: {
     width: 50,
     height: "100%",

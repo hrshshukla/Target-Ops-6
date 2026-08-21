@@ -13,7 +13,7 @@ export function ProfileForm() {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
-  const [mobileNumber, setMobileNumber] = useState(user?.mobileNumber ?? "");
+  const [mobileNumber, setMobileNumber] = useState(normalizeMobileNumber(user?.mobileNumber ?? ""));
   const [profilePictureUrl, setProfilePictureUrl] = useState(user?.profilePictureUrl ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -52,10 +52,21 @@ export function ProfileForm() {
       </View>
       <Field label="Name" value={name} onChangeText={setName} />
       <Field label="Email" value={email} onChangeText={setEmail} />
-      <Field label="Mobile number" value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" />
+      <Field
+        label="Mobile number"
+        value={mobileNumber}
+        onChangeText={(value) => setMobileNumber(value.replace(/\D/g, "").slice(0, 10))}
+        keyboardType="phone-pad"
+        prefix="+91"
+      />
       <PrimaryButton label="Save profile" onPress={() => void saveProfile()} disabled={saving} />
     </>
   );
+}
+
+function normalizeMobileNumber(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits.startsWith("91") && digits.length > 10 ? digits.slice(2, 12) : digits.slice(0, 10);
 }
 
 export function DocumentsForm() {
