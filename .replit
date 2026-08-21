@@ -62,6 +62,6 @@ waitForPort = 5000
 
 [userenv.shared]
 EXPO_PUBLIC_API_URL = "https://target-ops-6.vercel.app"
-IMAGEKIT_PRIVATE_KEY = "private_t7UtmyKsgSpU2/t5QP/M0ZYDZzM="
-IMAGEKIT_PUBLIC_KEY = "public_q8lG84hHtml+BPIGve/2DQxnmdc="
+IMAGEKIT_PRIVATE_KEY = "private_bkOUTqd/bsC94w6/vU1d4f2z6es="
+IMAGEKIT_PUBLIC_KEY = "public_KweOSIDRGPLHdvdUGlySINlGbJw="
 IMAGEKIT_URL_ENDPOINT = "https://ik.imagekit.io/hrshshukladev"

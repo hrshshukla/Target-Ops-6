@@ -126,12 +126,16 @@ function AccountSheet({ data, year, month, loading, error, retry, onMonthChange 
         </View>
       </View>
       <View style={[styles.tableWrap, { borderColor: colors.border }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.tableContent}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableContent}>
           <View style={styles.table}>
             <View style={[styles.tableRow, { backgroundColor: colors.secondary, borderBottomColor: colors.border }]}>
               {columns.map(([label, , cellStyle]) => <Text key={label} style={[styles.tableHeader, cellStyle, { color: colors.mutedForeground }]}>{label}</Text>)}
             </View>
-            {data.rows.map((row) => <TableRow key={row.companyId} row={row as unknown as Record<string, string | number>} columns={columns} />)}
+            {data.rows
+              .filter((row) => !["API Audit Company Updated", "API Audit Updated"].includes(row.companyName))
+              .map((row, index) => (
+                <TableRow key={row.companyId} row={row as unknown as Record<string, string | number>} columns={columns} stripe={index % 2 === 1} />
+              ))}
             <TableRow row={totals} columns={columns} total />
           </View>
         </ScrollView>
@@ -140,9 +144,9 @@ function AccountSheet({ data, year, month, loading, error, retry, onMonthChange 
   );
 }
 
-function TableRow({ row, columns, total = false }: { row: Record<string, string | number>; columns: readonly (readonly [string, string, object])[]; total?: boolean }) {
+function TableRow({ row, columns, total = false, stripe = false }: { row: Record<string, string | number>; columns: readonly (readonly [string, string, object])[]; total?: boolean; stripe?: boolean }) {
   const colors = useColors();
-  return <View style={[styles.tableRow, { borderBottomColor: colors.border, borderTopColor: total ? colors.primary : "transparent", borderTopWidth: total ? 1 : 0 }]}>{columns.map(([label, key, cellStyle]) => {
+  return <View style={[styles.tableRow, { backgroundColor: total ? colors.secondary : stripe ? colors.card : colors.background, borderBottomColor: colors.border, borderTopColor: total ? colors.primary : "transparent", borderTopWidth: total ? 1 : 0 }]}>{columns.map(([label, key, cellStyle]) => {
     const value = row[key];
     return <Text key={label} numberOfLines={2} style={[styles.tableCell, cellStyle, { color: key === "profit" ? colors.primary : colors.foreground }, total && styles.totalCell]}>{key === "companyName" ? value : formatMoney(Number(value))}</Text>;
   })}</View>;
@@ -163,8 +167,8 @@ const styles = StyleSheet.create({
   sheetTitle: { ...fonts.bold, fontSize: 20 },
   sheetSubtitle: { ...fonts.regular, fontSize: 12, marginTop: 3 },
   monthBadge: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  sheet: { flex: 1, minHeight: 0 },
-  tableWrap: { flex: 1, minHeight: 0, borderRadius: 18, overflow: "hidden", borderWidth: 1 },
+  sheet: { flexGrow: 0, flexShrink: 1 },
+  tableWrap: { flexGrow: 0, flexShrink: 1, borderRadius: 18, overflow: "hidden", borderWidth: 1 },
   tableContent: { minWidth: "100%" },
   table: { minWidth: 1020 },
   tableRow: { flexDirection: "row", alignItems: "center", minHeight: 58, borderBottomWidth: 1, paddingHorizontal: 12 },
