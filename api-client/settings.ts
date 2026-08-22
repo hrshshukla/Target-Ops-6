@@ -18,27 +18,27 @@ export type UserDocument = {
 };
 
 export const getImageKitAuth = () =>
-  customFetch<ImageKitAuth>("/settings/imagekit-auth", { responseType: "json" });
+  customFetch<ImageKitAuth>("/api/settings/imagekit-auth", { responseType: "json" });
 
 export const updateProfile = (body: {
   name: string;
-  email: string;
+  email?: string;
   mobileNumber?: string | null;
   profilePictureUrl?: string | null;
-}) => customFetch<User>("/settings/profile", {
+}) => customFetch<User>("/api/settings/profile", {
   method: "PATCH",
   body: JSON.stringify(body),
   responseType: "json",
 });
 
 export const updatePassword = (body: { currentPassword: string; newPassword: string }) =>
-  customFetch<void>("/settings/password", { method: "PATCH", body: JSON.stringify(body) });
+  customFetch<void>("/api/settings/password", { method: "PATCH", body: JSON.stringify(body) });
 
 export const getDocuments = () =>
-  customFetch<UserDocument[]>("/settings/documents", { responseType: "json" });
+  customFetch<UserDocument[]>("/api/settings/documents", { responseType: "json" });
 
 export const saveAadhaar = (imageUrl: string) =>
-  customFetch<UserDocument>("/settings/documents/aadhaar", {
+  customFetch<UserDocument>("/api/settings/documents/aadhaar", {
     method: "PUT",
     body: JSON.stringify({ imageUrl }),
     responseType: "json",

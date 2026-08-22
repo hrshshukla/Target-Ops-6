@@ -16,10 +16,7 @@ const guardRegistrationSchema = z.object({
   name: z.string().trim().min(1),
   phoneNumber: z.string().trim().regex(/^\d{10}$/, "Phone number must contain 10 digits."),
   email: z.string().trim().email().optional().or(z.literal("")),
-  age: z.preprocess(
-    (value) => value === "" || value == null ? undefined : value,
-    z.coerce.number().int().min(18).max(100),
-  ),
+  age: z.coerce.number().int().min(18).max(100),
   companyCode: z.string().trim().toUpperCase().min(1),
   password: z.string().min(8),
 });
@@ -34,7 +31,7 @@ const guardEmployeeRegistrationSchema = z.object({
 });
 const profileUpdateSchema = z.object({
   name: z.string().trim().min(1),
-  email: z.string().trim().email(),
+  email: z.string().trim().email().optional().or(z.literal("")),
   mobileNumber: z.string().trim().max(30).nullish(),
   profilePictureUrl: z.string().url().nullish(),
 });
@@ -686,7 +683,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!body) return true;
     const duplicate = await pool.query(
       "SELECT id FROM users WHERE lower(email) = lower($1) AND id <> $2",
-      [body.email, req.auth!.id],
+      [body.email || null, req.auth!.id],
     );
     if (duplicate.rowCount) {
       sendError(res, 409, "EMAIL_IN_USE", "That email is already in use.");
@@ -696,7 +693,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
       `UPDATE users SET name=$1, email=$2, mobile_number=$3, profile_picture_url=$4, updated_at=NOW()
        WHERE id=$5
        RETURNING id, name, email, mobile_number, profile_picture_url, role`,
-      [body.name, body.email, body.mobileNumber || null, body.profilePictureUrl || null, req.auth!.id],
+      [body.name, body.email || null, body.mobileNumber || null, body.profilePictureUrl || null, req.auth!.id],
     );
     const row = result.rows[0];
     res.json({
