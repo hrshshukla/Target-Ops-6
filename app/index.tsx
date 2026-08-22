@@ -93,6 +93,7 @@ export default function LoginScreen() {
           onChangeText={setIdentifier}
           keyboardType="default"
           placeholder="Email or phone number"
+            disabled={submitting}
         />
         <Field
           label="Password"
@@ -100,11 +101,13 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           placeholder="Enter your password"
+            disabled={submitting}
         />
         <PrimaryButton
           label={submitting ? "Signing in..." : "Sign in"}
           icon="arrow-right"
           disabled={submitting}
+            loading={submitting}
           onPress={() => void submit()}
         />
       </View>

@@ -200,12 +200,16 @@ export function GhostButton({
   icon,
   tone = "normal",
   filled = false,
+  disabled = false,
+  loading = false,
 }: {
   label: string;
   onPress: () => void;
   icon?: keyof typeof Feather.glyphMap;
   tone?: "normal" | "danger";
   filled?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
 }) {
   const colors = useColors();
 
@@ -215,6 +219,7 @@ export function GhostButton({
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.ghostButton,
         {
@@ -225,12 +230,14 @@ export function GhostButton({
               : filled
                 ? color
                 : "transparent",
-          opacity: pressed ? 0.7 : 1,
+          opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
         },
       ]}
       testID={`button-${label}`}
     >
-      {icon ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : icon ? (
         <Feather
           name={icon}
           size={16}
@@ -260,6 +267,7 @@ export function Field({
   keyboardType = "default",
   secureTextEntry = false,
   prefix,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -268,6 +276,7 @@ export function Field({
   keyboardType?: "default" | "numeric" | "phone-pad";
   secureTextEntry?: boolean;
   prefix?: string;
+  disabled?: boolean;
 }) {
   const colors = useColors();
   const [isPasswordVisible, setPasswordVisible] = useState(false);
@@ -290,6 +299,7 @@ export function Field({
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          editable={!disabled}
           placeholder={placeholder}
           placeholderTextColor={colors.mutedForeground}
           keyboardType={keyboardType}
@@ -299,6 +309,7 @@ export function Field({
         {secureTextEntry ? (
           <Pressable
             onPress={() => setPasswordVisible((visible) => !visible)}
+            disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={
               isPasswordVisible ? "Hide password" : "Show password"

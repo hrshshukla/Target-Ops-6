@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { GhostButton, Header, Screen } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
@@ -10,11 +11,18 @@ export default function SettingsScreen() {
   const colors = useColors();
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
   const canManageDocuments = user?.role === "SUPERVISOR" || user?.role === "SECURITY_GUARD";
 
   const handleSignOut = async () => {
-    await signOut();
-    router.replace("/");
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+      router.replace("/");
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -27,7 +35,15 @@ export default function SettingsScreen() {
         ) : null}
         <SettingsRow icon="lock" label="Update Password" onPress={() => router.push("/settings-password")} />
       </View>
-      <GhostButton label="Logout" icon="log-out" tone="danger" filled onPress={() => void handleSignOut()} />
+      <GhostButton
+        label={signingOut ? "Logging out..." : "Logout"}
+        icon="log-out"
+        tone="danger"
+        filled
+        disabled={signingOut}
+        loading={signingOut}
+        onPress={() => void handleSignOut()}
+      />
     </Screen>
   );
 }

@@ -83,6 +83,7 @@ export default function CreateAccountScreen() {
           value={name}
           onChangeText={setName}
           placeholder="Full name"
+          disabled={submitting}
         />
         <Field
           label="Phone Number *"
@@ -92,6 +93,7 @@ export default function CreateAccountScreen() {
           }
           keyboardType="phone-pad"
           placeholder="10-digit phone number"
+          disabled={submitting}
         />
         <Field
           label="Email (optional)"
@@ -99,6 +101,7 @@ export default function CreateAccountScreen() {
           onChangeText={setEmail}
           keyboardType="default"
           placeholder="name@company.com"
+          disabled={submitting}
         />
         <Field
           label="Age *"
@@ -106,12 +109,14 @@ export default function CreateAccountScreen() {
           onChangeText={(value) => setAge(value.replace(/\D/g, "").slice(0, 3))}
           keyboardType="numeric"
           placeholder="18 or above"
+          disabled={submitting}
         />
         <Field
           label="Company Code *"
           value={companyCode}
           onChangeText={setCompanyCode}
           placeholder="ISF, TIS, TSSM, TISF, or KE"
+          disabled={submitting}
         />
         <Field
           label="Password *"
@@ -119,6 +124,7 @@ export default function CreateAccountScreen() {
           onChangeText={setPassword}
           secureTextEntry
           placeholder="At least 8 characters"
+          disabled={submitting}
         />
         <PrimaryButton
           label={
