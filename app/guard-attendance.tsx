@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useGuardAttendance } from "@/api-client";
-import { GuardNav } from "@/components/GuardNav";
 import { ErrorState, Header, LoadingState, Screen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -57,7 +56,6 @@ export default function GuardAttendanceScreen() {
           </View>
         )}
       </View>
-      <GuardNav />
     </Screen>
   );
 }

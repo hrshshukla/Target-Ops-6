@@ -1,0 +1,41 @@
+Fix the navigation transitions on the Security Guard screens.
+
+There are 4 issues:
+
+Navigation direction is wrong when going backward
+The Guard navbar has 3 options in this order: Home → Attendance → Salary.
+Forward navigation is currently correct:
+Home → Attendance: Home slides out to the left, Attendance slides in from the right.
+Attendance → Salary: Attendance slides out to the left, Salary slides in from the right.
+But backward navigation is wrong:
+Attendance → Home should be the reverse: Attendance slides out to the right and Home slides in from the left.
+Salary → Attendance should also reverse the animation direction.
+The transition direction must depend on the position of the destination page in the navbar, not use the same right-to-left animation for every navigation.
+Blank screen during backward navigation
+Forward transitions work correctly with no blank screen.
+During backward transitions, a blank screen briefly appears between the two pages.
+Fix this so both screens remain properly rendered during the entire transition, exactly like the forward navigation.
+Do not change or break the existing forward transition.
+Transitions are too slow
+Make the page-to-page swipe transition noticeably faster and smoother.
+Keep the animation natural, but reduce its duration so navigation feels quick and responsive.
+Guard navbar must remain floating and visible
+The bottom navbar containing Home, Attendance, Salary must NOT participate in the page transition.
+It should remain fixed/floating and continuously visible while the page content slides.
+Example: when navigating Home → Attendance, only the page content should slide; the Guard navbar must stay in exactly the same position and remain visible throughout the animation.
+The same behavior should apply to all Guard page transitions.
+Expected behavior
+
+Forward:
+
+Home → Attendance: page slides left, Attendance enters from right.
+Attendance → Salary: page slides left, Salary enters from right.
+
+Backward:
+
+Attendance → Home: Attendance slides right, Home enters from left.
+Salary → Attendance: Salary slides right, Attendance enters from left.
+
+Keep the Guard navbar outside the animated page transition layer so it remains floating and visible at all times.
+
+Please implement this using the existing Expo Router / React Native navigation architecture rather than adding unnecessary libraries or rewriting unrelated parts of the app.

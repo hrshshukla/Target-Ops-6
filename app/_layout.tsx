@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import * as SystemUI from "expo-system-ui";
@@ -9,6 +9,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { getToken } from "@/services/storage";
 import {
   Inter_400Regular,
@@ -18,7 +19,9 @@ import {
 } from "@expo-google-fonts/inter";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { GuardNav } from "@/components/GuardNav";
 
 SplashScreen.preventAutoHideAsync();
 const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || null;
@@ -59,30 +62,47 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AuthProvider>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    animation: "slide_from_right",
-                    contentStyle: { backgroundColor: "#0A1118" },
-                  }}
-                >
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="create-account" />
-                  <Stack.Screen name="home" />
-                  <Stack.Screen name="settings" />
-                  <Stack.Screen name="settings-profile" />
-                  <Stack.Screen name="settings-documents" />
-                  <Stack.Screen name="settings-password" />
-                  <Stack.Screen name="guard-attendance" />
-                  <Stack.Screen name="guard-salary" />
-                  <Stack.Screen name="company/[id]" />
-                  <Stack.Screen name="employee/[id]" />
-                </Stack>
+                <AppNavigator />
               </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
+  );
+}
+
+function AppNavigator() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const isGuardRoute =
+    pathname === "/home" ||
+    pathname === "/guard-attendance" ||
+    pathname === "/guard-salary";
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          animationDuration: 220,
+          contentStyle: { backgroundColor: "#0A1118" },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="create-account" />
+        <Stack.Screen name="home" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="settings-profile" />
+        <Stack.Screen name="settings-documents" />
+        <Stack.Screen name="settings-password" />
+        <Stack.Screen name="guard-attendance" />
+        <Stack.Screen name="guard-salary" />
+        <Stack.Screen name="company/[id]" />
+        <Stack.Screen name="employee/[id]" />
+      </Stack>
+      {user?.role === "SECURITY_GUARD" && isGuardRoute ? <GuardNav /> : null}
+    </View>
   );
 }

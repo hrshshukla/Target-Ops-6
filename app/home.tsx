@@ -24,7 +24,6 @@ import {
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
-import { GuardNav } from "@/components/GuardNav";
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -188,7 +187,6 @@ function GuardHomeScreen() {
           </Text>
         </View>
       )}
-      <GuardNav />
     </Screen>
   );
 }

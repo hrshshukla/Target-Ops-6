@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useGuardSalary } from "@/api-client";
-import { GuardNav } from "@/components/GuardNav";
 import {
   ErrorState,
   formatMoney,
@@ -180,7 +179,6 @@ export default function GuardSalaryScreen() {
       </ScrollView>
 
       {/* Fixed bottom navigation */}
-      <GuardNav />
     </Screen>
   );
 }

@@ -14,6 +14,8 @@ export function GuardNav() {
   const router = useRouter();
   const pathname = usePathname();
   const colors = useColors();
+  const currentIndex = ITEMS.findIndex((item) => item.path === pathname);
+
   return (
     <View style={[styles.bar, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {ITEMS.map((item) => {
@@ -21,7 +23,17 @@ export function GuardNav() {
         return (
           <Pressable
             key={item.path}
-            onPress={() => router.replace(item.path as never)}
+            onPress={() => {
+              const destinationIndex = ITEMS.findIndex(
+                (candidate) => candidate.path === item.path,
+              );
+              if (destinationIndex === currentIndex) return;
+              if (destinationIndex < currentIndex) {
+                router.back();
+              } else {
+                router.push(item.path as never);
+              }
+            }}
             style={[
               styles.item,
               active && { backgroundColor: colors.primary },
