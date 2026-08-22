@@ -1,10 +1,9 @@
 import * as ImagePicker from "expo-image-picker";
-import { Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { getDocuments, saveAadhaar, updatePassword, updateProfile, uploadImageToImageKit, type UserDocument } from "@/api-client";
 import { useAuth } from "@/context/AuthContext";
-import { Field, LoadingState, PrimaryButton } from "@/components/ui";
+import { Avatar, Field, LoadingState, PrimaryButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
 
@@ -69,9 +68,7 @@ export function ProfileForm() {
   return (
     <>
       <View style={styles.profileRow}>
-        {profilePictureUrl ? <Image source={{ uri: profilePictureUrl }} style={styles.avatar} /> : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.secondary }]}><Feather name="user" size={28} color={colors.primary} /></View>
-        )}
+        <Avatar name={user?.name ?? name} uri={profilePictureUrl} size={120} />
         <PrimaryButton label="Choose profile picture" onPress={() => void chooseImage()} disabled={saving} />
       </View>
       <Field label="Name" value={name} onChangeText={setName} />
@@ -182,8 +179,6 @@ export function PasswordForm() {
 
 const styles = StyleSheet.create({
   profileRow: { alignItems: "center", gap: 14, marginBottom: 20 },
-  avatar: { width: 120, height: 120, borderRadius: 60 },
-  avatarFallback: { alignItems: "center", justifyContent: "center" },
   document: { width: "100%", height: 190, borderRadius: 18, marginVertical: 12 },
   help: { ...fonts.regular, fontSize: 12, lineHeight: 18, marginBottom: 15 },
 });

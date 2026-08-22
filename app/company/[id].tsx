@@ -136,7 +136,7 @@ export default function CompanyScreen() {
               <TextInput
                 value={employeeSearch}
                 onChangeText={setEmployeeSearch}
-                placeholder="Search by name, phone, employee ID, or site"
+                placeholder="Search by name, phone or site name"
                 placeholderTextColor={colors.mutedForeground}
                 style={[styles.searchInput, { color: colors.foreground }]}
                 autoCapitalize="none"

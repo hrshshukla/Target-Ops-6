@@ -712,6 +712,24 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
        RETURNING id, name, email, mobile_number, profile_picture_url, role`,
       [body.name, body.email || null, body.mobileNumber || null, body.profilePictureUrl || null, req.auth!.id],
     );
+    if (req.auth!.role === "SECURITY_GUARD") {
+      await pool.query(
+        `UPDATE employees e
+         SET name=$1, profile_picture_url=$2, updated_at=NOW()
+         FROM company_assignments ca
+         WHERE ca.company_id = e.company_id
+           AND ca.user_id = $3
+           AND e.name = $4
+           AND e.role = 'Security Guard'
+           AND e.deleted_at IS NULL`,
+        [
+          body.name,
+          body.profilePictureUrl || null,
+          req.auth!.id,
+          req.auth!.name,
+        ],
+      );
+    }
     const row = result.rows[0];
     res.json({
       id: row.id, name: row.name, email: row.email, mobileNumber: row.mobile_number,
