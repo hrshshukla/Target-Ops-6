@@ -30,10 +30,6 @@ author = "agent"
 task = "workflow.run"
 args = "Expo development server"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Local Vercel API"
-
 [[workflows.workflow]]
 name = "Expo development server"
 author = "agent"
@@ -44,18 +40,6 @@ outputType = "console"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm start"
-
-[[workflows.workflow]]
-name = "Local Vercel API"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run api:dev"
-waitForPort = 5000
 
 [userenv]
 
