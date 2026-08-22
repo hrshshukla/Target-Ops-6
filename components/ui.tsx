@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 export function Screen({
   children,
@@ -23,7 +24,7 @@ export function Screen({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const Container = scroll ? require("react-native").ScrollView : View;
+  const Container = scroll ? KeyboardAwareScrollViewCompat : View;
   return (
     <Container
       style={[styles.screen, { backgroundColor: colors.background }]}
