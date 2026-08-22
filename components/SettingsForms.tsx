@@ -1,16 +1,18 @@
 import * as ImagePicker from "expo-image-picker";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { getDocuments, saveAadhaar, updatePassword, updateProfile, uploadImageToImageKit, type UserDocument } from "@/api-client";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, Field, LoadingState, PrimaryButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { useModal } from "@/components/CustomModal";
 
 export function ProfileForm() {
   const colors = useColors();
   const { user, updateUser } = useAuth();
+  const { showModal } = useModal();
   const queryClient = useQueryClient();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -44,9 +46,9 @@ export function ProfileForm() {
        void queryClient.invalidateQueries({ queryKey: ["guard", "me"] });
        void queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
        void queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      Alert.alert("Uploaded", "Your profile picture was saved.");
+      showModal({ type: "success", title: "Uploaded", message: "Your profile picture was saved." });
     } catch (error) {
-      Alert.alert("Upload failed", error instanceof Error ? error.message : "Unable to upload image.");
+      showModal({ type: "error", title: "Upload failed", message: error instanceof Error ? error.message : "Unable to upload image." });
     } finally { setSaving(false); }
   };
 
@@ -67,9 +69,9 @@ export function ProfileForm() {
        void queryClient.invalidateQueries({ queryKey: ["guard", "me"] });
        void queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
        void queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      Alert.alert("Saved", "Your profile was updated.");
+      showModal({ type: "success", title: "Saved", message: "Your profile was updated." });
     } catch (error) {
-      Alert.alert("Unable to save", error instanceof Error ? error.message : "Please try again.");
+      showModal({ type: "error", title: "Unable to save", message: error instanceof Error ? error.message : "Please try again." });
     } finally { setSaving(false); }
   };
 
@@ -100,6 +102,7 @@ function normalizeMobileNumber(value: string) {
 
 export function DocumentsForm() {
   const colors = useColors();
+  const { showModal } = useModal();
   const [document, setDocument] = useState<UserDocument | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,9 +127,9 @@ export function DocumentsForm() {
       const url = await uploadImageToImageKit(previewUri, `aadhaar-${Date.now()}.jpg`, "image/jpeg");
       setDocument(await saveAadhaar(url));
       setPreviewUri(null);
-      Alert.alert("Saved", "Your Aadhaar image was saved.");
+      showModal({ type: "success", title: "Saved", message: "Your Aadhaar image was saved." });
     } catch (error) {
-      Alert.alert("Upload failed", error instanceof Error ? error.message : "Unable to upload image.");
+      showModal({ type: "error", title: "Upload failed", message: error instanceof Error ? error.message : "Unable to upload image." });
     } finally { setSaving(false); }
   };
 
@@ -160,19 +163,20 @@ export function DocumentsForm() {
 }
 
 export function PasswordForm() {
+  const { showModal } = useModal();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const changePassword = async () => {
-    if (newPassword !== confirmPassword) { Alert.alert("Unable to update", "New passwords do not match."); return; }
+    if (newPassword !== confirmPassword) { showModal({ type: "error", title: "Unable to update", message: "New passwords do not match." }); return; }
     try {
       setSaving(true);
       await updatePassword({ currentPassword, newPassword });
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-      Alert.alert("Updated", "Your password has been changed.");
+      showModal({ type: "success", title: "Updated", message: "Your password has been changed." });
     } catch (error) {
-      Alert.alert("Unable to update", error instanceof Error ? error.message : "Please try again.");
+      showModal({ type: "error", title: "Unable to update", message: error instanceof Error ? error.message : "Please try again." });
     } finally { setSaving(false); }
   };
   return (

@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -36,6 +35,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useModal } from "@/components/CustomModal";
 
 export default function CompanyScreen() {
   const colors = useColors();
@@ -370,6 +370,7 @@ function AddEmployeeModal({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { showModal } = useModal();
   const mutation = useCreateEmployee();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -383,18 +384,20 @@ function AddEmployeeModal({
   );
   const submit = () => {
     if (!name.trim() || !contact.trim() || (role === "Supervisor" && !site.trim()))
-      return Alert.alert(
-        "Missing details",
-        role === "Security Guard"
+      return showModal({
+        type: "warning",
+        title: "Missing details",
+        message: role === "Security Guard"
           ? "Add a name and phone number."
           : "Add a name, contact, and site.",
-      );
+      });
     if (role === "Security Guard") {
       if (!/^\d{10}$/.test(contact) || !age || Number(age) < 18 || password.length < 8) {
-        return Alert.alert(
-          "Missing details",
-          "Security Guards need a 10-digit phone number, age 18 or above, and a password of at least 8 characters.",
-        );
+        return showModal({
+          type: "warning",
+          title: "Missing details",
+          message: "Security Guards need a 10-digit phone number, age 18 or above, and a password of at least 8 characters.",
+        });
       }
       createGuardEmployee(companyId, {
         name: name.trim(),
@@ -405,10 +408,11 @@ function AddEmployeeModal({
         site: site.trim(),
         basicSalary: Number(basic),
       }).then(onCreated).catch((error) => {
-        Alert.alert(
-          "Could not add employee",
-          error instanceof Error ? error.message : "The account was not saved. Try again.",
-        );
+        showModal({
+          type: "error",
+          title: "Could not add employee",
+          message: error instanceof Error ? error.message : "The account was not saved. Try again.",
+        });
       });
       return;
     }
@@ -430,10 +434,11 @@ function AddEmployeeModal({
       {
         onSuccess: onCreated,
         onError: () =>
-          Alert.alert(
-            "Could not add employee",
-            "The employee was not saved. Try again.",
-          ),
+          showModal({
+            type: "error",
+            title: "Could not add employee",
+            message: "The employee was not saved. Try again.",
+          }),
       },
     );
   };

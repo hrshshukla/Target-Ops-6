@@ -1,19 +1,21 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { Field, PrimaryButton } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fonts } from "@/constants/fonts";
+import { useModal } from "@/components/CustomModal";
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isLoading, signIn } = useAuth();
+  const { showModal } = useModal();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +49,7 @@ export default function LoginScreen() {
         error instanceof Error && error.message
           ? error.message
           : "Check your phone/email and password, then try again.";
-      Alert.alert("Sign in failed", message);
+      showModal({ type: "error", title: "Sign in failed", message });
     } finally {
       setSubmitting(false);
     }

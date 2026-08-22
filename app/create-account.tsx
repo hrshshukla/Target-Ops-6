@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { registerGuard } from "@/api-client";
 import { Field, Header, PrimaryButton, Screen } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { useModal } from "@/components/CustomModal";
 
 const COMPANY_CODES = [
   ["ISF", "INDUSTRIAL SECURITY FORCE"],
@@ -17,6 +18,7 @@ const COMPANY_CODES = [
 export default function CreateAccountScreen() {
   const colors = useColors();
   const router = useRouter();
+  const { showModal } = useModal();
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -35,14 +37,11 @@ export default function CreateAccountScreen() {
       Number(age) < 18 ||
       password.length < 8
     ) {
-      Alert.alert(
-        "Incomplete details",
-        "Enter all required fields. Password must be at least 8 characters.",
-      );
+      showModal({ type: "warning", title: "Incomplete details", message: "Enter all required fields. Password must be at least 8 characters." });
       return;
     }
     if (!COMPANY_CODES.some(([value]) => value === code)) {
-      Alert.alert("Invalid Company Code", "Use ISF, TIS, TSSM, TISF, or KE.");
+      showModal({ type: "error", title: "Invalid Company Code", message: "Use ISF, TIS, TSSM, TISF, or KE." });
       return;
     }
     try {
@@ -55,16 +54,14 @@ export default function CreateAccountScreen() {
         companyCode: code,
         password,
       });
-      Alert.alert(
-        "Account created",
-        "Your Security Guard account is ready. Sign in with your phone number.",
-        [{ text: "Sign in", onPress: () => router.replace("/") }],
-      );
+      showModal({
+        type: "success",
+        title: "Account created",
+        message: "Your Security Guard account is ready. Sign in with your phone number.",
+        actions: [{ label: "Sign in", onPress: () => router.replace("/") }],
+      });
     } catch (error) {
-      Alert.alert(
-        "Unable to create account",
-        error instanceof Error ? error.message : "Please try again.",
-      );
+      showModal({ type: "error", title: "Unable to create account", message: error instanceof Error ? error.message : "Please try again." });
     } finally {
       setSubmitting(false);
     }

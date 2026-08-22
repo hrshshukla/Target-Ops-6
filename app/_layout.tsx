@@ -22,6 +22,7 @@ import { Stack } from "expo-router";
 import { usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { GuardNav } from "@/components/GuardNav";
+import { CustomModalProvider } from "@/components/CustomModal";
 
 SplashScreen.preventAutoHideAsync();
 const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || null;
@@ -57,17 +58,19 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AuthProvider>
-                <AppNavigator />
-              </AuthProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <CustomModalProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <AuthProvider>
+                  <AppNavigator />
+                </AuthProvider>
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </CustomModalProvider>
     </SafeAreaProvider>
   );
 }

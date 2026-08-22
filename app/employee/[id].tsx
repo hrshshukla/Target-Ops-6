@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   useDeleteEmployee,
   useGetAttendance,
@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { useModal } from "@/components/CustomModal";
 
 export default function EmployeeScreen() {
   const colors = useColors();
@@ -93,6 +94,7 @@ function DetailsTab({
 }) {
   const colors = useColors();
   const router = useRouter();
+  const { showModal } = useModal();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(employee.name);
   const [contact, setContact] = useState(employee.contact);
@@ -122,39 +124,45 @@ function DetailsTab({
           onUpdated();
         },
         onError: () =>
-          Alert.alert("Could not save", "The employee was not updated."),
+          showModal({ type: "error", title: "Could not save", message: "The employee was not updated." }),
       },
     );
   };
   const confirmDelete = () => {
     if (remove.isPending) return;
-    Alert.alert(
-      "Delete employee?",
-      "This removes the employee from active rosters. Historical attendance and salary records are retained.",
-      [
-        { text: "Cancel", style: "cancel" },
+    showModal({
+      type: "confirmation",
+      title: "Delete employee?",
+      message: "This removes the employee from active rosters. Historical attendance and salary records are retained.",
+      actions: [
+        { label: "Cancel", variant: "secondary" },
         {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            if (remove.isPending) return;
-            remove.mutate(
-              { employeeId: String(employee.employeeId) },
-              {
-                onSuccess: () =>
-                  Alert.alert(
-                    "Success",
-                    "Employee deleted successfully.",
-                    [{ text: "OK", onPress: () => router.back() }],
-                    { cancelable: false },
-                  ),
-                onError: () => Alert.alert("Could not delete", "Try again."),
-              },
-            );
-          },
+          label: "Delete",
+          variant: "danger",
+          onPress: () =>
+            new Promise<void>((resolve) => {
+              remove.mutate(
+                { employeeId: String(employee.employeeId) },
+                {
+                  onSuccess: () => {
+                    showModal({
+                      type: "success",
+                      title: "Success",
+                      message: "Employee deleted successfully.",
+                      actions: [{ label: "OK", onPress: () => router.back() }],
+                    });
+                    resolve();
+                  },
+                  onError: () => {
+                    showModal({ type: "error", title: "Could not delete", message: "Try again." });
+                    resolve();
+                  },
+                },
+              );
+            }),
         },
       ],
-    );
+    });
   };
   if (editing)
     return (
@@ -293,6 +301,7 @@ function formatDateOnly(value: string) {
 
 function AttendanceTab({ employeeId }: { employeeId: string }) {
   const colors = useColors();
+  const { showModal } = useModal();
   const today = new Date();
   const [monthDate, setMonthDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -319,10 +328,11 @@ function AttendanceTab({ employeeId }: { employeeId: string }) {
       {
         onSuccess: () => void attendance.refetch(),
         onError: () =>
-          Alert.alert(
-            "Attendance not saved",
-            "Please check your connection and try again.",
-          ),
+          showModal({
+            type: "error",
+            title: "Attendance not saved",
+            message: "Please check your connection and try again.",
+          }),
       },
     );
   };
@@ -458,6 +468,7 @@ function SalaryTab({
   canEdit: boolean;
 }) {
   const colors = useColors();
+  const { showModal } = useModal();
   const today = new Date();
   const salary = useGetSalary(employeeId, {
     year: today.getFullYear(),
@@ -508,7 +519,7 @@ function SalaryTab({
           void salary.refetch();
         },
         onError: () =>
-          Alert.alert("Salary not saved", "Check the values and try again."),
+          showModal({ type: "error", title: "Salary not saved", message: "Check the values and try again." }),
       },
     );
   };
