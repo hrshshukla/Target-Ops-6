@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants from "expo-constants";
+import * as SystemUI from "expo-system-ui";
 import { setAuthTokenGetter, setBaseUrl } from "@/api-client";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -45,6 +46,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      void SystemUI.setBackgroundColorAsync("#0A1118");
+    }
+  }, []);
   if (!fontsLoaded && !fontError) return null;
   return (
     <SafeAreaProvider>
