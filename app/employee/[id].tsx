@@ -133,7 +133,7 @@ function DetailsTab({
     showModal({
       type: "confirmation",
       title: "Delete employee?",
-      message: "This removes the employee from active rosters. Historical attendance and salary records are retained.",
+      message: "This removes the employee from permanently.",
       actions: [
         { label: "Cancel", variant: "secondary" },
         {

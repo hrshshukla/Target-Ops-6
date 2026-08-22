@@ -1,8 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import * as XLSX from "xlsx";
 import {
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,12 +22,14 @@ import {
   formatMoney,
   Header,
   LoadingState,
+  PrimaryButton,
   SegmentedControl,
   Screen,
   GhostButton,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { useModal } from "@/components/CustomModal";
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -209,6 +215,8 @@ function CompanyCard({
   onPress: () => void;
 }) {
   const colors = useColors();
+  const { showModal } = useModal();
+  const [exporting, setExporting] = useState(false);
   const mark =
     COMPANY_CATALOG.find((company) => company.id === item.id)?.mark ??
     item.name;
@@ -285,6 +293,8 @@ function AccountSheet({
   onMonthChange: (offset: number) => void;
 }) {
   const colors = useColors();
+  const { showModal } = useModal();
+  const [exporting, setExporting] = useState(false);
   const monthLabel = new Date(year, month - 1, 1).toLocaleString("en-IN", {
     month: "long",
     year: "numeric",
@@ -306,6 +316,77 @@ function AccountSheet({
     ["PROFIT", "profit", styles.numericCell],
   ] as const;
   const totals = { companyName: "TOTAL ALL", ...data.totals };
+  const visibleRows = data.rows.filter(
+    (row) =>
+      !["API Audit Company Updated", "API Audit Updated"].includes(
+        row.companyName,
+      ),
+  );
+  const reportRows = [...visibleRows, totals];
+  const downloadExcel = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        columns.map(([label]) => label),
+        ...reportRows.map((row) =>
+          columns.map(([, key]) =>
+            key === "companyName" ? row[key] : Number(row[key]),
+          ),
+        ),
+      ]);
+      worksheet["!cols"] = [
+        { wch: 34 },
+        ...columns.slice(1).map(() => ({ wch: 15 })),
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Account Sheet");
+      const base64 = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "base64",
+      });
+      const monthName = new Date(year, month - 1, 1).toLocaleString("en-IN", {
+        month: "long",
+      });
+      const filename = `Account-Sheet-${monthName}-${year}.xlsx`;
+      if (Platform.OS === "web") {
+        const link = document.createElement("a");
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64}`;
+        link.download = filename;
+        link.click();
+      } else {
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        if (!(await Sharing.isAvailableAsync())) {
+          throw new Error("File sharing is not available on this device.");
+        }
+        await Sharing.shareAsync(fileUri, {
+          mimeType:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          dialogTitle: filename,
+          UTI: "com.microsoft.excel.xlsx",
+        });
+      }
+      showModal({
+        type: "success",
+        title: "Download complete",
+        message: `${filename} was downloaded successfully.`,
+      });
+    } catch (error) {
+      showModal({
+        type: "error",
+        title: "Download failed",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to create the Excel file.",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
   return (
     <View style={styles.sheet}>
       <View style={styles.sheetHeading}>
@@ -363,24 +444,26 @@ function AccountSheet({
                 </Text>
               ))}
             </View>
-            {data.rows
-              .filter(
-                (row) =>
-                  !["API Audit Company Updated", "API Audit Updated"].includes(
-                    row.companyName,
-                  ),
-              )
-              .map((row, index) => (
-                <TableRow
-                  key={row.companyId}
-                  row={row as unknown as Record<string, string | number>}
-                  columns={columns}
-                  stripe={index % 2 === 1}
-                />
-              ))}
+            {visibleRows.map((row, index) => (
+              <TableRow
+                key={row.companyId}
+                row={row as unknown as Record<string, string | number>}
+                columns={columns}
+                stripe={index % 2 === 1}
+              />
+            ))}
             <TableRow row={totals} columns={columns} total />
           </View>
         </ScrollView>
+      </View>
+      <View style={{ marginVertical: 12 }}>
+        <PrimaryButton
+          label={exporting ? "Generating Excel..." : "Download Excel"}
+          icon="download"
+          onPress={() => void downloadExcel()}
+          disabled={exporting}
+          loading={exporting}
+        />
       </View>
     </View>
   );
