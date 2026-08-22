@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { getDocuments, saveAadhaar, updatePassword, updateProfile, uploadImageToImageKit, type UserDocument } from "@/api-client";
@@ -10,6 +11,7 @@ import { fonts } from "@/constants/fonts";
 export function ProfileForm() {
   const colors = useColors();
   const { user, updateUser } = useAuth();
+  const queryClient = useQueryClient();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [mobileNumber, setMobileNumber] = useState(normalizeMobileNumber(user?.mobileNumber ?? ""));
@@ -39,6 +41,9 @@ export function ProfileForm() {
         profilePictureUrl: url,
       });
       updateUser(next);
+       void queryClient.invalidateQueries({ queryKey: ["guard", "me"] });
+       void queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+       void queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       Alert.alert("Uploaded", "Your profile picture was saved.");
     } catch (error) {
       Alert.alert("Upload failed", error instanceof Error ? error.message : "Unable to upload image.");
@@ -59,6 +64,9 @@ export function ProfileForm() {
       setMobileNumber(normalizeMobileNumber(next.mobileNumber ?? ""));
       setProfilePictureUrl(next.profilePictureUrl ?? "");
       updateUser(next);
+       void queryClient.invalidateQueries({ queryKey: ["guard", "me"] });
+       void queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+       void queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       Alert.alert("Saved", "Your profile was updated.");
     } catch (error) {
       Alert.alert("Unable to save", error instanceof Error ? error.message : "Please try again.");
@@ -68,7 +76,7 @@ export function ProfileForm() {
   return (
     <>
       <View style={styles.profileRow}>
-        <Avatar name={user?.name ?? name} uri={profilePictureUrl} size={120} />
+        <Avatar name={user?.name ?? name} uri={user?.profilePictureUrl} size={120} />
         <PrimaryButton label="Choose profile picture" onPress={() => void chooseImage()} disabled={saving} />
       </View>
       <Field label="Name" value={name} onChangeText={setName} />

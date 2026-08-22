@@ -719,7 +719,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
          FROM company_assignments ca
          WHERE ca.company_id = e.company_id
            AND ca.user_id = $3
-           AND e.name = $4
+           AND (e.name = $4 OR e.contact = $5)
            AND e.role = 'Security Guard'
            AND e.deleted_at IS NULL`,
         [
@@ -727,6 +727,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
           body.profilePictureUrl || null,
           req.auth!.id,
           req.auth!.name,
+          req.auth!.mobileNumber,
         ],
       );
     }
