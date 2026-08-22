@@ -295,7 +295,7 @@ function EmployeeRow({
           {employee.name}
         </Text>
         <Text style={[styles.employeeMeta, { color: colors.mutedForeground }]}>
-          EMP ID: {employee.employeeId} · {employee.site}
+          EMP-ID: {employee.employeeId} · {employee.site}
         </Text>
       </View>
       <View style={styles.rowRight}>

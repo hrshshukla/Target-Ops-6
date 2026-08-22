@@ -54,7 +54,7 @@ export default function EmployeeScreen() {
     );
   return (
     <Screen scroll={false}>
-      <Header title="Employee" subtitle={`EMP ID: ${employee.data.employeeId}`} back />
+      <Header title="Employee" subtitle={`EMP-ID: ${employee.data.employeeId}`} back />
       <SegmentedControl
         items={["Details", "Attendance", "Salary"]}
         value={tab}
@@ -209,7 +209,7 @@ function DetailsTab({
           {employee.role}
         </Text>
         <Text style={[styles.profileNumber, { color: colors.mutedForeground }]}>
-          EMP ID: {employee.employeeId}
+          EMP-ID: {employee.employeeId}
         </Text>
       </View>
       <View style={styles.infoGrid}>
@@ -512,9 +512,6 @@ function SalaryTab({
         </Text>
         <Text style={[styles.heroValue, { color: colors.primaryForeground }]}>
           {formatMoney(netSalary)}
-        </Text>
-        <Text style={[styles.heroCaption, { color: colors.primaryForeground }]}>
-          Calculated by the operations API
         </Text>
       </View>
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>

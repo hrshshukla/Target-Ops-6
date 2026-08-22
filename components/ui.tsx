@@ -208,7 +208,10 @@ export function GhostButton({
   filled?: boolean;
 }) {
   const colors = useColors();
-  const color = tone === "danger" ? colors.destructive : colors.primary;
+
+  const color =
+    tone === "danger" ? colors.destructive : colors.primary;
+
   return (
     <Pressable
       onPress={onPress}
@@ -216,14 +219,35 @@ export function GhostButton({
         styles.ghostButton,
         {
           borderColor: color,
-          backgroundColor: filled ? color : "transparent",
+          backgroundColor:
+            tone === "danger"
+              ? "rgba(220, 38, 38, 0.20)"
+              : filled
+                ? color
+                : "transparent",
           opacity: pressed ? 0.7 : 1,
         },
       ]}
       testID={`button-${label}`}
     >
-      {icon ? <Feather name={icon} size={16} color={filled ? colors.destructiveForeground : color} /> : null}
-      <Text style={[styles.ghostButtonText, { color: filled ? colors.destructiveForeground : color }]}>{label}</Text>
+      {icon ? (
+        <Feather
+          name={icon}
+          size={16}
+          color={color}
+        />
+      ) : null}
+
+      <Text
+        style={[
+          styles.ghostButtonText,
+          {
+            color,
+          },
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -446,7 +470,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { ...fonts.bold, fontSize: 14 },
   ghostButton: {
-    minHeight: 42,
+    minHeight: 52,
     borderRadius: 13,
     borderWidth: 1,
     paddingHorizontal: 15,
