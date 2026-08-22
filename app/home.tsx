@@ -151,12 +151,16 @@ function GuardHomeScreen() {
         }
       />
       {guard.isLoading ? (
-        <LoadingState label="Loading your profile..." />
+        <View style={guardStyles.stateContent}>
+          <LoadingState label="Loading your profile..." />
+        </View>
       ) : guard.isError || !guard.data ? (
-        <ErrorState
-          message="Unable to load your guard profile."
-          onRetry={() => void guard.refetch()}
-        />
+        <View style={guardStyles.stateContent}>
+          <ErrorState
+            message="Unable to load your guard profile."
+            onRetry={() => void guard.refetch()}
+          />
+        </View>
       ) : (
         <View style={guardStyles.content}>
           <View style={[guardStyles.hero, { backgroundColor: colors.primary }]}>
@@ -191,6 +195,7 @@ function GuardHomeScreen() {
 
 const guardStyles = StyleSheet.create({
   content: { flex: 1, gap: 18 },
+  stateContent: { flex: 1, justifyContent: "center" },
   hero: { borderRadius: 22, padding: 20, alignItems: "center", gap: 7 },
   name: { ...fonts.bold, fontSize: 22 },
   meta: { ...fonts.medium, fontSize: 12 },
