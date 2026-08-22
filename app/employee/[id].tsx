@@ -54,7 +54,7 @@ export default function EmployeeScreen() {
     );
   return (
     <Screen scroll={false}>
-      <Header title="Employee" subtitle={employee.data.employeeNumber} back />
+      <Header title="Employee" subtitle={`EMP ID: ${employee.data.employeeId}`} back />
       <SegmentedControl
         items={["Details", "Attendance", "Salary"]}
         value={tab}
@@ -114,7 +114,7 @@ function DetailsTab({
       dateOfJoining: employee.dateOfJoining,
     };
     update.mutate(
-      { employeeId: employee.id, data },
+          { employeeId: String(employee.employeeId), data },
       {
         onSuccess: () => {
           setEditing(false);
@@ -136,7 +136,7 @@ function DetailsTab({
           style: "destructive",
           onPress: () =>
             remove.mutate(
-              { employeeId: employee.id },
+              { employeeId: String(employee.employeeId) },
               {
                 onSuccess: onUpdated,
                 onError: () => Alert.alert("Could not delete", "Try again."),
@@ -209,7 +209,7 @@ function DetailsTab({
           {employee.role}
         </Text>
         <Text style={[styles.profileNumber, { color: colors.mutedForeground }]}>
-          {employee.employeeNumber} · {employee.idCard}
+          EMP ID: {employee.employeeId}
         </Text>
       </View>
       <View style={styles.infoGrid}>

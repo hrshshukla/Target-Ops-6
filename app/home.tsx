@@ -177,7 +177,7 @@ function GuardHomeScreen() {
             <Text
               style={[guardStyles.meta, { color: colors.primaryForeground }]}
             >
-              {guard.data.site} · {guard.data.employeeNumber}
+              {guard.data.site} · EMP ID: {guard.data.employeeId}
             </Text>
           </View>
           <Text style={[guardStyles.heading, { color: colors.foreground }]}>

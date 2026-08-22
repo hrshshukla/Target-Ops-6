@@ -18,6 +18,7 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 import {
+  bigint,
   date,
   integer,
   numeric,
@@ -79,8 +80,7 @@ export const companyAssignments = pgTable("company_assignments", {
 export const employees = pgTable("employees", {
   id: text("id").primaryKey(),
   companyId: text("company_id").notNull(),
-  employeeNumber: text("employee_number").notNull(),
-  idCard: text("id_card").notNull(),
+  employeeId: bigint("employee_id", { mode: "number" }).notNull(),
   name: text("name").notNull(),
   contact: text("contact").notNull(),
   salary: numeric("salary").notNull().default("0"),
@@ -96,8 +96,7 @@ export const employees = pgTable("employees", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   ...timestamps,
 }, (table) => ({
-  employeeNumberIdx: uniqueIndex("employees_number_idx").on(table.employeeNumber),
-  idCardIdx: uniqueIndex("employees_id_card_idx").on(table.idCard),
+  employeeIdIdx: uniqueIndex("employees_employee_id_idx").on(table.employeeId),
 }));
 
 export const attendance = pgTable("attendance", {

@@ -122,8 +122,6 @@ async function createGuardAccount(
 ) {
   const userId = `user-${randomBytes(8).toString("hex")}`;
   const employeeId = `employee-${randomBytes(8).toString("hex")}`;
-  const employeeNumber = `EMP-${randomBytes(4).toString("hex").toUpperCase()}`;
-  const idCard = `ID-${randomBytes(4).toString("hex").toUpperCase()}`;
   const basicSalary = body.basicSalary ?? 0;
   await client.query(
     `INSERT INTO users
@@ -137,10 +135,10 @@ async function createGuardAccount(
   );
   await client.query(
     `INSERT INTO employees
-     (id, company_id, employee_number, id_card, name, contact, salary, site, role,
+     (id, company_id, employee_id, name, contact, salary, site, role,
       basic_salary, allowances, overtime, pf, esic, date_of_joining)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Security Guard',$9,0,0,0,0,CURRENT_DATE)`,
-    [employeeId, body.companyId, employeeNumber, idCard, body.name, body.phoneNumber, basicSalary, body.site || "Unassigned", basicSalary],
+     VALUES ($1,$2,nextval('employees_employee_id_seq'),$3,$4,$5,$6,'Security Guard',$7,0,0,0,0,CURRENT_DATE)`,
+    [employeeId, body.companyId, body.name, body.phoneNumber, basicSalary, body.site || "Unassigned", basicSalary],
   );
   return {
     user: { id: userId, name: body.name, role: "SECURITY_GUARD" as const },
@@ -253,24 +251,25 @@ async function ensureSeed() {
   );
 
   const employees = [
-    ["employee-001", "company-isf", "EMP-0001", "ID-000001", "Kabir Singh", "9876543210", "Night Gate", "Security Guard", 28000, 24000],
-    ["employee-002", "company-isf", "EMP-0002", "ID-000002", "Ananya Rao", "9876543211", "Control Room", "Supervisor", 42000, 36000],
-    ["employee-003", "company-tis", "EMP-0003", "ID-000003", "Vikram Yadav", "9876543212", "Warehouse A", "Security Guard", 26500, 23000],
-    ["employee-004", "company-tis", "EMP-0004", "ID-000004", "Meera Nair", "9876543213", "Main Entrance", "Security Guard", 27500, 24000],
-    ["employee-005", "company-tssm", "EMP-0005", "ID-000005", "Arjun Patel", "9876543214", "Staff Parking", "Security Guard", 25000, 22000],
-    ["employee-006", "company-ke", "EMP-0006", "ID-000006", "Sana Khan", "9876543215", "Reception", "Supervisor", 39000, 33000],
+    ["employee-001", "company-isf", 1, "Kabir Singh", "9876543210", "Night Gate", "Security Guard", 28000, 24000],
+    ["employee-002", "company-isf", 2, "Ananya Rao", "9876543211", "Control Room", "Supervisor", 42000, 36000],
+    ["employee-003", "company-tis", 3, "Vikram Yadav", "9876543212", "Warehouse A", "Security Guard", 26500, 23000],
+    ["employee-004", "company-tis", 4, "Meera Nair", "9876543213", "Main Entrance", "Security Guard", 27500, 24000],
+    ["employee-005", "company-tssm", 5, "Arjun Patel", "9876543214", "Staff Parking", "Security Guard", 25000, 22000],
+    ["employee-006", "company-ke", 6, "Sana Khan", "9876543215", "Reception", "Supervisor", 39000, 33000],
   ] as const;
   for (const employee of employees) {
-    const [id, companyId, employeeNumber, idCard, name, contact, site, role, salary, basicSalary] = employee;
+    const [id, companyId, employeeId, name, contact, site, role, salary, basicSalary] = employee;
     await pool.query(
       `INSERT INTO employees
-       (id, company_id, employee_number, id_card, name, contact, salary, site, role,
+       (id, company_id, employee_id, name, contact, salary, site, role,
         basic_salary, allowances, overtime, pf, esic, date_of_joining)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        ON CONFLICT (id) DO NOTHING`,
-      [id, companyId, employeeNumber, idCard, name, contact, salary, site, role, basicSalary, 1500, 0, 1800, 450, "2025-06-15"],
+      [id, companyId, employeeId, name, contact, salary, site, role, basicSalary, 1500, 0, 1800, 450, "2025-06-15"],
     );
   }
+  await pool.query("SELECT setval('employees_employee_id_seq', COALESCE((SELECT MAX(employee_id) FROM employees), 1), true)");
 
   const accountRows = [
     ["company-isf", 999999, 0, 0, 0, 0, 0],
@@ -313,8 +312,8 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
     `CREATE TABLE IF NOT EXISTS employees (
-      id TEXT PRIMARY KEY, company_id TEXT NOT NULL, employee_number TEXT NOT NULL,
-      id_card TEXT NOT NULL, name TEXT NOT NULL, contact TEXT NOT NULL,
+      id TEXT PRIMARY KEY, company_id TEXT NOT NULL, employee_id BIGINT NOT NULL,
+      name TEXT NOT NULL, contact TEXT NOT NULL,
       salary NUMERIC NOT NULL DEFAULT 0, site TEXT NOT NULL, role TEXT NOT NULL,
       basic_salary NUMERIC NOT NULL DEFAULT 0, allowances NUMERIC NOT NULL DEFAULT 0,
       overtime NUMERIC NOT NULL DEFAULT 0, pf NUMERIC NOT NULL DEFAULT 0,
@@ -322,8 +321,22 @@ async function ensureSchema() {
       date_of_joining DATE NOT NULL, deleted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS employees_number_idx ON employees (employee_number)`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS employees_id_card_idx ON employees (id_card)`,
+    `ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_id BIGINT`,
+    `WITH numbered AS (
+       SELECT id, ROW_NUMBER() OVER (ORDER BY created_at, id) AS employee_id
+       FROM employees WHERE employee_id IS NULL
+     )
+     UPDATE employees e SET employee_id = numbered.employee_id
+     FROM numbered WHERE e.id = numbered.id`,
+    `ALTER TABLE employees ALTER COLUMN employee_id SET NOT NULL`,
+    `CREATE SEQUENCE IF NOT EXISTS employees_employee_id_seq AS BIGINT`,
+    `SELECT setval('employees_employee_id_seq', COALESCE((SELECT MAX(employee_id) FROM employees), 1), EXISTS (SELECT 1 FROM employees))`,
+    `ALTER TABLE employees ALTER COLUMN employee_id SET DEFAULT nextval('employees_employee_id_seq')`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS employees_employee_id_idx ON employees (employee_id)`,
+    `DROP INDEX IF EXISTS employees_number_idx`,
+    `DROP INDEX IF EXISTS employees_id_card_idx`,
+    `ALTER TABLE employees DROP COLUMN IF EXISTS employee_number`,
+    `ALTER TABLE employees DROP COLUMN IF EXISTS id_card`,
     `CREATE TABLE IF NOT EXISTS attendance (
       id TEXT PRIMARY KEY, employee_id TEXT NOT NULL, date DATE NOT NULL, status TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -410,7 +423,12 @@ async function canAccessCompany(user: UserRecord, companyId: string) {
 
 async function employeeForRequest(req: ApiRequest, res: ApiResponse) {
   const user = req.auth!;
-  const result = await pool.query("SELECT * FROM employees WHERE id = $1 AND deleted_at IS NULL", [req.params.employeeId]);
+  const employeeId = Number(req.params.employeeId);
+  if (!Number.isSafeInteger(employeeId) || employeeId < 1) {
+    sendError(res, 400, "INVALID_EMPLOYEE_ID", "Employee ID must be a positive number.");
+    return null;
+  }
+  const result = await pool.query("SELECT * FROM employees WHERE employee_id = $1 AND deleted_at IS NULL", [employeeId]);
   const employee = result.rows[0];
   if (!employee) {
     sendError(res, 404, "NOT_FOUND", "Employee not found.");
@@ -448,8 +466,7 @@ function employeePayload(row: Record<string, unknown>) {
   return {
     id: row.id,
     companyId: row.company_id,
-    employeeNumber: row.employee_number,
-    idCard: row.id_card,
+    employeeId: Number(row.employee_id),
     name: row.name,
     contact: row.contact,
     salary: money(row.salary),
@@ -899,7 +916,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     const result = await pool.query(
       `SELECT * FROM employees
        WHERE company_id = $1 AND deleted_at IS NULL
-       AND ($2 = '' OR name ILIKE '%' || $2 || '%' OR employee_number ILIKE '%' || $2 || '%' OR site ILIKE '%' || $2 || '%' OR id_card ILIKE '%' || $2 || '%')
+       AND ($2 = '' OR name ILIKE '%' || $2 || '%' OR employee_id::text ILIKE '%' || $2 || '%' OR site ILIKE '%' || $2 || '%')
        ORDER BY name LIMIT 100`,
       [req.params.companyId, search],
     );
@@ -919,15 +936,11 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!body) return true;
     const role = req.auth!.role === "SUPERVISOR" ? "Security Guard" : body.role;
     const id = `employee-${randomBytes(8).toString("hex")}`;
-    const numberResult = await pool.query("SELECT COALESCE(MAX(CAST(SUBSTRING(employee_number FROM 5) AS integer)),0)+1 AS next FROM employees");
-    const cardResult = await pool.query("SELECT COALESCE(MAX(CAST(SUBSTRING(id_card FROM 4) AS integer)),0)+1 AS next FROM employees");
-    const employeeNumber = `EMP-${String(numberResult.rows[0].next).padStart(4, "0")}`;
-    const idCard = `ID-${String(cardResult.rows[0].next).padStart(6, "0")}`;
     await pool.query(
       `INSERT INTO employees
-       (id, company_id, employee_number, id_card, name, contact, salary, site, role, basic_salary, allowances, overtime, pf, esic, profile_picture_url, date_of_joining)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-      [id, req.params.companyId, employeeNumber, idCard, body.name, body.contact, body.salary, body.site, role, body.basicSalary, body.allowances, body.overtime, body.pf, body.esic, body.profilePictureUrl ?? null, body.dateOfJoining],
+       (id, company_id, employee_id, name, contact, salary, site, role, basic_salary, allowances, overtime, pf, esic, profile_picture_url, date_of_joining)
+       VALUES ($1,$2,nextval('employees_employee_id_seq'),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [id, req.params.companyId, body.name, body.contact, body.salary, body.site, role, body.basicSalary, body.allowances, body.overtime, body.pf, body.esic, body.profilePictureUrl ?? null, body.dateOfJoining],
     );
     const employee = await pool.query("SELECT * FROM employees WHERE id = $1", [id]);
     res.status(201).json(employeePayload(employee.rows[0]));
@@ -955,9 +968,9 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
       `UPDATE employees SET name=$1, contact=$2, salary=$3, site=$4, role=$5, basic_salary=$6,
        allowances=$7, overtime=$8, pf=$9, esic=$10, profile_picture_url=$11, date_of_joining=$12, updated_at=NOW()
        WHERE id=$13`,
-      [body.name, body.contact, body.salary, body.site, body.role, body.basicSalary, body.allowances, body.overtime, body.pf, body.esic, body.profilePictureUrl ?? null, body.dateOfJoining, req.params.employeeId],
+      [body.name, body.contact, body.salary, body.site, body.role, body.basicSalary, body.allowances, body.overtime, body.pf, body.esic, body.profilePictureUrl ?? null, body.dateOfJoining, employee.id],
     );
-    const updated = await pool.query("SELECT * FROM employees WHERE id = $1", [req.params.employeeId]);
+    const updated = await pool.query("SELECT * FROM employees WHERE id = $1", [employee.id]);
     res.json(employeePayload(updated.rows[0]));
     return true;
   }
@@ -968,7 +981,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!(await authenticate(req, res)) || !requireRole(req, res, "ADMIN")) return true;
     const employee = await employeeForRequest(req, res);
     if (!employee) return true;
-    await pool.query("UPDATE employees SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1", [req.params.employeeId]);
+    await pool.query("UPDATE employees SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1", [employee.id]);
     res.status(204).send();
     return true;
   }
@@ -984,7 +997,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     const { year, month } = values;
     const result = await pool.query(
       `SELECT date::text, status FROM attendance WHERE employee_id=$1 AND EXTRACT(YEAR FROM date)=$2 AND EXTRACT(MONTH FROM date)=$3 ORDER BY date`,
-      [req.params.employeeId, year, month],
+      [employee.id, year, month],
     );
     const records = result.rows;
     const presentDays = records.filter((row) => row.status === "PRESENT").length;
@@ -1009,11 +1022,11 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     await pool.query(
       `INSERT INTO attendance (id, employee_id, date, status) VALUES ($1,$2,$3,$4)
        ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status, updated_at=NOW()`,
-      [`attendance-${req.params.employeeId}-${req.params.date}`, req.params.employeeId, req.params.date, body.status],
+      [`attendance-${employee.id}-${req.params.date}`, employee.id, req.params.date, body.status],
     );
     const summary = await pool.query(
       `SELECT date::text, status FROM attendance WHERE employee_id=$1 AND EXTRACT(YEAR FROM date)=$2 AND EXTRACT(MONTH FROM date)=$3 ORDER BY date`,
-      [req.params.employeeId, dateValue.getUTCFullYear(), dateValue.getUTCMonth() + 1],
+      [employee.id, dateValue.getUTCFullYear(), dateValue.getUTCMonth() + 1],
     );
     const records = summary.rows;
     const presentDays = records.filter((row) => row.status === "PRESENT").length;
@@ -1044,7 +1057,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!employee) return true;
     await pool.query(
       `INSERT INTO salary_transactions (id, employee_id, type, amount, note, month, year) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [`salary-${randomBytes(10).toString("hex")}`, req.params.employeeId, body.type, body.amount, body.note, body.month, body.year],
+      [`salary-${randomBytes(10).toString("hex")}`, employee.id, body.type, body.amount, body.note, body.month, body.year],
     );
     res.status(201).json(await salaryPayload(employee, body.year, body.month));
     return true;
@@ -1073,12 +1086,12 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
         body.overtime,
         body.pf,
         body.esic,
-        req.params.employeeId,
+        employee.id,
       ],
     );
     await pool.query(
       "DELETE FROM salary_transactions WHERE employee_id=$1 AND year=$2 AND month=$3",
-      [req.params.employeeId, body.year, body.month],
+      [employee.id, body.year, body.month],
     );
     const transactions = [
       ["ADVANCE", body.advance],
@@ -1091,7 +1104,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
            VALUES ($1,$2,$3,$4,$5,$6,$7)`,
           [
             `salary-${randomBytes(10).toString("hex")}`,
-            req.params.employeeId,
+            employee.id,
             type,
             amount,
             "Updated from salary details",
@@ -1102,7 +1115,7 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
       }
     }
     const updatedEmployee = await pool.query("SELECT * FROM employees WHERE id = $1", [
-      req.params.employeeId,
+      employee.id,
     ]);
     res.json(await salaryPayload(updatedEmployee.rows[0], body.year, body.month));
     return true;

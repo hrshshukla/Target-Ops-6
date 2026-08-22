@@ -123,7 +123,7 @@ export default function CompanyScreen() {
               renderItem={({ item: employee }) => (
                 <EmployeeRow
                   employee={employee}
-                  onPress={() => router.push(`/employee/${employee.id}`)}
+                  onPress={() => router.push(`/employee/${employee.employeeId}`)}
                 />
               )}
               ListEmptyComponent={
@@ -295,7 +295,7 @@ function EmployeeRow({
           {employee.name}
         </Text>
         <Text style={[styles.employeeMeta, { color: colors.mutedForeground }]}>
-          {employee.employeeNumber} · {employee.site}
+          EMP ID: {employee.employeeId} · {employee.site}
         </Text>
       </View>
       <View style={styles.rowRight}>
@@ -423,7 +423,7 @@ function AddEmployeeModal({
             <Text
               style={[styles.sectionHint, { color: colors.mutedForeground }]}
             >
-              A unique employee number and ID card will be generated.
+              A unique numeric Employee ID will be generated.
             </Text>
           </View>
           <Pressable onPress={onClose} hitSlop={10}>

@@ -98,8 +98,7 @@ export interface EmployeeInput {
 
 export type Employee = EmployeeInput & {
   id: string;
-  employeeNumber: string;
-  idCard: string;
+  employeeId: number;
   companyId: string;
 };
 

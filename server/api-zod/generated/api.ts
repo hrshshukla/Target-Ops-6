@@ -207,8 +207,7 @@ export const ListEmployeesResponseItem = zod.object({
   "dateOfJoining": zod.coerce.date()
 }).and(zod.object({
   "id": zod.string(),
-  "employeeNumber": zod.string(),
-  "idCard": zod.string(),
+  "employeeId": zod.number(),
   "companyId": zod.string()
 }))
 export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
@@ -251,8 +250,7 @@ export const CreateEmployeeResponse = zod.object({
   "dateOfJoining": zod.coerce.date()
 }).and(zod.object({
   "id": zod.string(),
-  "employeeNumber": zod.string(),
-  "idCard": zod.string(),
+  "employeeId": zod.number(),
   "companyId": zod.string()
 }))
 
@@ -279,8 +277,7 @@ export const GetEmployeeResponse = zod.object({
   "dateOfJoining": zod.coerce.date()
 }).and(zod.object({
   "id": zod.string(),
-  "employeeNumber": zod.string(),
-  "idCard": zod.string(),
+  "employeeId": zod.number(),
   "companyId": zod.string()
 }))
 
@@ -322,8 +319,7 @@ export const UpdateEmployeeResponse = zod.object({
   "dateOfJoining": zod.coerce.date()
 }).and(zod.object({
   "id": zod.string(),
-  "employeeNumber": zod.string(),
-  "idCard": zod.string(),
+  "employeeId": zod.number(),
   "companyId": zod.string()
 }))
 
