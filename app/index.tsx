@@ -88,11 +88,11 @@ export default function LoginScreen() {
         </Text>
         <View style={{ height: 18 }} />
         <Field
-          label="Phone number or email"
+          label="Email or Phone Number"
           value={identifier}
           onChangeText={setIdentifier}
           keyboardType="default"
-          placeholder="Phone or Email"
+          placeholder="Email or phone number"
         />
         <Field
           label="Password"

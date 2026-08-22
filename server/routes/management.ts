@@ -222,6 +222,17 @@ async function ensureSeed() {
       "SECURITY_GUARD",
     ],
   );
+  await pool.query(
+    `UPDATE users
+     SET mobile_number = CASE id
+       WHEN $1 THEN $2
+       WHEN $3 THEN $4
+       WHEN $5 THEN $6
+     END,
+     company_id = CASE id WHEN $5 THEN 'company-isf' ELSE company_id END
+     WHERE id IN ($1, $3, $5)`,
+    [adminId, "9000000001", supervisorId, "9000000002", guardId, "9000000003"],
+  );
 
   for (const [id, name] of companies) {
     await pool.query(
@@ -546,10 +557,6 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     }
     if (!verifyPassword(body.password, row.password_hash)) {
       sendError(res, 401, "INVALID_PASSWORD", "Password is incorrect.");
-      return true;
-    }
-    if (row.role === "SECURITY_GUARD" && row.mobile_number !== body.identifier) {
-      sendError(res, 401, "INVALID_CREDENTIALS", "Security Guards must sign in with their phone number.");
       return true;
     }
     const token = randomBytes(32).toString("hex");
