@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
@@ -92,6 +92,7 @@ function DetailsTab({
   onUpdated: () => void;
 }) {
   const colors = useColors();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(employee.name);
   const [contact, setContact] = useState(employee.contact);
@@ -125,7 +126,8 @@ function DetailsTab({
       },
     );
   };
-  const confirmDelete = () =>
+  const confirmDelete = () => {
+    if (remove.isPending) return;
     Alert.alert(
       "Delete employee?",
       "This removes the employee from active rosters. Historical attendance and salary records are retained.",
@@ -134,17 +136,26 @@ function DetailsTab({
         {
           text: "Delete",
           style: "destructive",
-          onPress: () =>
+          onPress: () => {
+            if (remove.isPending) return;
             remove.mutate(
               { employeeId: String(employee.employeeId) },
               {
-                onSuccess: onUpdated,
+                onSuccess: () =>
+                  Alert.alert(
+                    "Success",
+                    "Employee deleted successfully.",
+                    [{ text: "OK", onPress: () => router.back() }],
+                    { cancelable: false },
+                  ),
                 onError: () => Alert.alert("Could not delete", "Try again."),
               },
-            ),
+            );
+          },
         },
       ],
     );
+  };
   if (editing)
     return (
       <KeyboardAwareScrollViewCompat
@@ -248,10 +259,12 @@ function DetailsTab({
             onPress={() => setEditing(true)}
           />
           <GhostButton
-            label="Delete employee"
+            label={remove.isPending ? "Deleting..." : "Delete employee"}
             icon="trash-2"
             tone="danger"
             onPress={confirmDelete}
+            disabled={remove.isPending}
+            loading={remove.isPending}
           />
         </View>
       ) : null}
