@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { getDocuments, saveAadhaar, updatePassword, updateProfile, uploadImageToImageKit, type UserDocument } from "@/api-client";
 import { useAuth } from "@/context/AuthContext";
-import { Field, PrimaryButton } from "@/components/ui";
+import { Field, LoadingState, PrimaryButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
 
@@ -97,11 +97,13 @@ export function DocumentsForm() {
   const colors = useColors();
   const [document, setDocument] = useState<UserDocument | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     getDocuments()
       .then((items) => setDocument((current) => current ?? items[0] ?? null))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   }, []);
 
   const chooseImage = async () => {
@@ -126,10 +128,12 @@ export function DocumentsForm() {
   return (
     <>
       <Text style={[styles.help, { color: colors.mutedForeground }]}>Upload your Aadhaar Card photo only. PDF files are not accepted.</Text>
-      {previewUri || document ? (
+      {loading ? (
+        <LoadingState label="Loading Aadhaar image..." />
+      ) : previewUri || document ? (
         <Image source={{ uri: previewUri ?? document?.imageUrl }} style={styles.document} />
       ) : null}
-      {!previewUri ? (
+      {!loading && !previewUri ? (
         <PrimaryButton
           label={document ? "Replace Aadhaar photo" : "Upload Aadhaar photo"}
           icon="upload"
