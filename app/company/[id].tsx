@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import {
@@ -43,10 +44,26 @@ export default function CompanyScreen() {
   const { user } = useAuth();
   const [tab, setTab] = useState("Company");
   const [showAdd, setShowAdd] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const company = useGetCompany(id);
   const employees = useListEmployees(id, undefined, {
     query: { enabled: tab === "Employees" },
   });
+  const filteredEmployees = useMemo(() => {
+    const query = employeeSearch.trim().toLowerCase();
+    if (!query) return employees.data ?? [];
+    return (employees.data ?? []).filter((employee) =>
+      [
+        employee.name,
+        employee.contact,
+        String(employee.employeeId),
+        employee.site,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [employeeSearch, employees.data]);
 
   if (company.isLoading)
     return (
@@ -108,6 +125,26 @@ export default function CompanyScreen() {
               </Pressable>
             ) : null}
           </View>
+          {user?.role === "ADMIN" || user?.role === "SUPERVISOR" ? (
+            <View
+              style={[
+                styles.searchBox,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Feather name="search" size={17} color={colors.mutedForeground} />
+              <TextInput
+                value={employeeSearch}
+                onChangeText={setEmployeeSearch}
+                placeholder="Search by name, phone, employee ID, or site"
+                placeholderTextColor={colors.mutedForeground}
+                style={[styles.searchInput, { color: colors.foreground }]}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+            </View>
+          ) : null}
           {employees.isLoading ? (
             <LoadingState label="Loading employees..." />
           ) : employees.isError ? (
@@ -117,7 +154,7 @@ export default function CompanyScreen() {
             />
           ) : (
             <FlatList
-              data={employees.data ?? []}
+              data={filteredEmployees}
               keyExtractor={(employee) => employee.id}
               contentContainerStyle={styles.employeeList}
               renderItem={({ item: employee }) => (
@@ -128,8 +165,12 @@ export default function CompanyScreen() {
               )}
               ListEmptyComponent={
                 <EmptyState
-                  title="No employees yet"
-                  message="Add the first employee to this company."
+                  title={employeeSearch.trim() ? "No matching employees" : "No employees yet"}
+                  message={
+                    employeeSearch.trim()
+                      ? "Try a different name, phone, employee ID, or site."
+                      : "Add the first employee to this company."
+                  }
                 />
               }
               showsVerticalScrollIndicator={false}
@@ -551,6 +592,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   addText: { ...fonts.bold, fontSize: 12 },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
+    ...fonts.regular,
+    fontSize: 13,
+  },
   employeeList: { gap: 10, paddingBottom: 24 },
   employeeRow: {
     flexDirection: "row",
