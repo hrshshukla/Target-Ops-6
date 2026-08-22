@@ -24,20 +24,27 @@ export function Screen({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const Container = scroll ? KeyboardAwareScrollViewCompat : View;
+  if (scroll) {
+    return (
+      <KeyboardAwareScrollViewCompat
+        style={[styles.screen, { backgroundColor: colors.background }]}
+        contentContainerStyle={{ paddingTop: 18, paddingBottom: insets.bottom + 28 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </KeyboardAwareScrollViewCompat>
+    );
+  }
   return (
-    <Container
-      style={[styles.screen, { backgroundColor: colors.background }]}
-      contentContainerStyle={
-        scroll
-          ? { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 28 }
-          : undefined
-      }
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.background, paddingBottom: insets.bottom },
+      ]}
     >
       {children}
-    </Container>
+    </View>
   );
 }
 
@@ -59,7 +66,7 @@ export function Header({
     <View
       style={[
         styles.header,
-        { paddingTop: back ? 12 : insets.top + 4 },
+        { paddingTop: insets.top + (back ? 12 : 4) },
       ]}
     >
       <View style={styles.headerLeft}>

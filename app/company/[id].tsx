@@ -34,6 +34,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { fonts } from "@/constants/fonts";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CompanyScreen() {
   const colors = useColors();
@@ -327,6 +328,7 @@ function AddEmployeeModal({
   onCreated: () => void;
 }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const mutation = useCreateEmployee();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -403,7 +405,13 @@ function AddEmployeeModal({
     >
       <KeyboardAwareScrollViewCompat
         style={{ backgroundColor: colors.background }}
-        contentContainerStyle={styles.modalContent}
+        contentContainerStyle={[
+          styles.modalContent,
+          {
+            paddingTop: insets.top + 28,
+            paddingBottom: insets.bottom + 34,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         bottomOffset={30}
       >
