@@ -107,6 +107,63 @@ function verifyPassword(password: string, stored: string) {
   return timingSafeEqual(candidate, Buffer.from(hash, "hex"));
 }
 
+function imageKitUrlIsOwned(url: string) {
+  const endpoint = process.env.IMAGEKIT_URL_ENDPOINT?.replace(/\/+$/, "");
+  return Boolean(endpoint && url.startsWith(`${endpoint}/`));
+}
+
+async function deleteImageKitFile(url: string | null | undefined) {
+  if (!url || !imageKitUrlIsOwned(url)) return;
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  if (!privateKey) throw new Error("ImageKit is not configured.");
+
+  const searchQuery = `url = "${url.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  const searchResponse = await fetch(
+    `https://api.imagekit.io/v1/files?searchQuery=${encodeURIComponent(searchQuery)}`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString("base64")}`,
+      },
+    },
+  );
+  if (!searchResponse.ok) {
+    throw new Error(`ImageKit file lookup failed (HTTP ${searchResponse.status}).`);
+  }
+  const files = await searchResponse.json() as Array<{ fileId?: string; url?: string }>;
+  const matches = files.filter((file) => file.fileId && file.url === url);
+  if (!matches.length) {
+    throw new Error("The ImageKit file could not be found.");
+  }
+
+  for (const file of matches) {
+    const deleteResponse = await fetch(`https://api.imagekit.io/v1/files/${file.fileId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString("base64")}`,
+      },
+    });
+    if (!deleteResponse.ok) {
+      throw new Error(`ImageKit file deletion failed (HTTP ${deleteResponse.status}).`);
+    }
+  }
+}
+
+async function deleteUserImages(userId: string) {
+  const result = await pool.query(
+    "SELECT profile_picture_url FROM users WHERE id=$1",
+    [userId],
+  );
+  const documents = await pool.query(
+    "SELECT image_url FROM user_documents WHERE user_id=$1",
+    [userId],
+  );
+  const urls = [
+    result.rows[0]?.profile_picture_url,
+    ...documents.rows.map((row) => row.image_url),
+  ];
+  for (const url of urls) await deleteImageKitFile(url);
+}
+
 async function createGuardAccount(
   client: { query: (text: string, values?: unknown[]) => Promise<unknown> },
   body: {
@@ -706,6 +763,28 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
       sendError(res, 409, "EMAIL_IN_USE", "That email is already in use.");
       return true;
     }
+    const previous = await pool.query(
+      "SELECT profile_picture_url FROM users WHERE id=$1",
+      [req.auth!.id],
+    );
+    const previousUrl = previous.rows[0]?.profile_picture_url as string | null | undefined;
+    const nextUrl = body.profilePictureUrl || null;
+    if (previousUrl && previousUrl !== nextUrl) {
+      try {
+        await deleteImageKitFile(previousUrl);
+      } catch (error) {
+        logger.error({ err: error, userId: req.auth!.id }, "Previous profile image cleanup failed");
+        if (nextUrl && nextUrl !== previousUrl) {
+          try {
+            await deleteImageKitFile(nextUrl);
+          } catch (cleanupError) {
+            logger.error({ err: cleanupError, userId: req.auth!.id }, "New profile image rollback failed");
+          }
+        }
+        sendError(res, 502, "IMAGE_CLEANUP_FAILED", "The previous profile picture could not be removed.");
+        return true;
+      }
+    }
     const result = await pool.query(
       `UPDATE users SET name=$1, email=$2, mobile_number=$3, profile_picture_url=$4, updated_at=NOW()
        WHERE id=$5
@@ -777,6 +856,25 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!(await authenticate(req, res)) || !requireRole(req, res, "SUPERVISOR", "SECURITY_GUARD")) return true;
     const body = parseBody(documentSchema, req, res);
     if (!body) return true;
+    const previous = await pool.query(
+      "SELECT image_url FROM user_documents WHERE id=$1",
+      [`aadhaar-${req.auth!.id}`],
+    );
+    const previousUrl = previous.rows[0]?.image_url as string | null | undefined;
+    if (previousUrl && previousUrl !== body.imageUrl) {
+      try {
+        await deleteImageKitFile(previousUrl);
+      } catch (error) {
+        logger.error({ err: error, userId: req.auth!.id }, "Previous document image cleanup failed");
+        try {
+          await deleteImageKitFile(body.imageUrl);
+        } catch (cleanupError) {
+          logger.error({ err: cleanupError, userId: req.auth!.id }, "New document image rollback failed");
+        }
+        sendError(res, 502, "IMAGE_CLEANUP_FAILED", "The previous document image could not be removed.");
+        return true;
+      }
+    }
     const result = await pool.query(
       `INSERT INTO user_documents (id, user_id, document_type, image_url)
        VALUES ($1, $2, 'AADHAAR', $3)
@@ -1000,6 +1098,29 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     if (!(await authenticate(req, res)) || !requireRole(req, res, "ADMIN")) return true;
     const employee = await employeeForRequest(req, res);
     if (!employee) return true;
+    const account = await pool.query(
+      `SELECT u.id
+       FROM users u
+       JOIN company_assignments ca ON ca.user_id = u.id AND ca.company_id = $1
+       WHERE u.role = 'SECURITY_GUARD'
+         AND (u.name = $2 OR u.mobile_number = $3)
+       LIMIT 1`,
+      [employee.company_id, employee.name, employee.contact],
+    );
+    const userId = account.rows[0]?.id as string | undefined;
+    if (userId) {
+      try {
+        await deleteUserImages(userId);
+      } catch (error) {
+        logger.error({ err: error, userId }, "User image cleanup failed during account deletion");
+        sendError(res, 502, "IMAGE_CLEANUP_FAILED", "User images could not be removed.");
+        return true;
+      }
+      await pool.query("DELETE FROM user_documents WHERE user_id=$1", [userId]);
+      await pool.query("DELETE FROM sessions WHERE user_id=$1", [userId]);
+      await pool.query("DELETE FROM company_assignments WHERE user_id=$1", [userId]);
+      await pool.query("DELETE FROM users WHERE id=$1", [userId]);
+    }
     await pool.query("UPDATE employees SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1", [employee.id]);
     res.status(204).send();
     return true;
