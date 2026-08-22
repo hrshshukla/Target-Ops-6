@@ -31,6 +31,8 @@ export default function CreateAccountScreen() {
       !name.trim() ||
       !/^\d{10}$/.test(phoneNumber) ||
       !code ||
+      !age ||
+      Number(age) < 18 ||
       password.length < 8
     ) {
       Alert.alert(
@@ -99,7 +101,7 @@ export default function CreateAccountScreen() {
           placeholder="name@company.com"
         />
         <Field
-          label="Age"
+          label="Age *"
           value={age}
           onChangeText={(value) => setAge(value.replace(/\D/g, "").slice(0, 3))}
           keyboardType="numeric"

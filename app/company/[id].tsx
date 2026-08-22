@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import {
+  createGuardEmployee,
   useCreateEmployee,
   useGetCompany,
   useListEmployees,
@@ -329,14 +330,45 @@ function AddEmployeeModal({
   const mutation = useCreateEmployee();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
+  const [email, setEmail] = useState("");
+  const [age, setAge] = useState("");
+  const [password, setPassword] = useState("");
   const [site, setSite] = useState("");
   const [basic, setBasic] = useState("24000");
   const [role, setRole] = useState<"Security Guard" | "Supervisor">(
     "Security Guard",
   );
   const submit = () => {
-    if (!name.trim() || !contact.trim() || !site.trim())
-      return Alert.alert("Missing details", "Add a name, contact, and site.");
+    if (!name.trim() || !contact.trim() || (role === "Supervisor" && !site.trim()))
+      return Alert.alert(
+        "Missing details",
+        role === "Security Guard"
+          ? "Add a name and phone number."
+          : "Add a name, contact, and site.",
+      );
+    if (role === "Security Guard") {
+      if (!/^\d{10}$/.test(contact) || !age || Number(age) < 18 || password.length < 8) {
+        return Alert.alert(
+          "Missing details",
+          "Security Guards need a 10-digit phone number, age 18 or above, and a password of at least 8 characters.",
+        );
+      }
+      createGuardEmployee(companyId, {
+        name: name.trim(),
+        phoneNumber: contact,
+        email: email.trim(),
+        age: Number(age),
+        password,
+        site: site.trim(),
+        basicSalary: Number(basic),
+      }).then(onCreated).catch((error) => {
+        Alert.alert(
+          "Could not add employee",
+          error instanceof Error ? error.message : "The account was not saved. Try again.",
+        );
+      });
+      return;
+    }
     const data: EmployeeInput = {
       name,
       contact,
@@ -403,6 +435,30 @@ function AddEmployeeModal({
           keyboardType="phone-pad"
           placeholder="Phone number"
         />
+        {role === "Security Guard" ? (
+          <>
+            <Field
+              label="Email (optional)"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="name@company.com"
+            />
+            <Field
+              label="Age *"
+              value={age}
+              onChangeText={(value) => setAge(value.replace(/\D/g, "").slice(0, 3))}
+              keyboardType="numeric"
+              placeholder="18 or above"
+            />
+            <Field
+              label="Password *"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="At least 8 characters"
+            />
+          </>
+        ) : null}
         <Field
           label="Site"
           value={site}

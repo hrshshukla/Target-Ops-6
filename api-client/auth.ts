@@ -15,9 +15,36 @@ export type GuardRegistrationResponse = {
   user: { id: string; name: string; role: "SECURITY_GUARD" };
 };
 
+export type GuardEmployeeRegistration = {
+  name: string;
+  phoneNumber: string;
+  email?: string;
+  age: number;
+  password: string;
+  site?: string;
+  basicSalary?: number;
+};
+
+export type GuardEmployeeRegistrationResponse = GuardRegistrationResponse & {
+  employee: { id: string; name: string; role: "Security Guard" };
+};
+
 export const registerGuard = (body: GuardRegistration) =>
-  customFetch<GuardRegistrationResponse>("/auth/register-guard", {
+  customFetch<GuardRegistrationResponse>("/api/auth/register-guard", {
     method: "POST",
     body: JSON.stringify(body),
     responseType: "json",
   });
+
+export const createGuardEmployee = (
+  companyId: string,
+  body: GuardEmployeeRegistration,
+) =>
+  customFetch<GuardEmployeeRegistrationResponse>(
+    `/api/companies/${companyId}/guard-accounts`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+      responseType: "json",
+    },
+  );

@@ -18,10 +18,19 @@ const guardRegistrationSchema = z.object({
   email: z.string().trim().email().optional().or(z.literal("")),
   age: z.preprocess(
     (value) => value === "" || value == null ? undefined : value,
-    z.coerce.number().int().min(18).max(100).optional(),
+    z.coerce.number().int().min(18).max(100),
   ),
   companyCode: z.string().trim().toUpperCase().min(1),
   password: z.string().min(8),
+});
+const guardEmployeeRegistrationSchema = z.object({
+  name: z.string().trim().min(1),
+  phoneNumber: z.string().trim().regex(/^\d{10}$/, "Phone number must contain 10 digits."),
+  email: z.string().trim().email().optional().or(z.literal("")),
+  age: z.coerce.number().int().min(18).max(100),
+  password: z.string().min(8),
+  site: z.string().trim().optional(),
+  basicSalary: z.number().finite().nonnegative().optional(),
 });
 const profileUpdateSchema = z.object({
   name: z.string().trim().min(1),
@@ -99,6 +108,47 @@ function verifyPassword(password: string, stored: string) {
   if (!salt || !hash) return false;
   const candidate = scryptSync(password, salt, 64);
   return timingSafeEqual(candidate, Buffer.from(hash, "hex"));
+}
+
+async function createGuardAccount(
+  client: { query: (text: string, values?: unknown[]) => Promise<unknown> },
+  body: {
+    name: string;
+    phoneNumber: string;
+    email?: string;
+    age: number;
+    password: string;
+    companyId: string;
+    site?: string;
+    basicSalary?: number;
+  },
+) {
+  const userId = `user-${randomBytes(8).toString("hex")}`;
+  const employeeId = `employee-${randomBytes(8).toString("hex")}`;
+  const employeeNumber = `EMP-${randomBytes(4).toString("hex").toUpperCase()}`;
+  const idCard = `ID-${randomBytes(4).toString("hex").toUpperCase()}`;
+  const basicSalary = body.basicSalary ?? 0;
+  await client.query(
+    `INSERT INTO users
+     (id, name, email, mobile_number, age, company_id, password_hash, role)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'SECURITY_GUARD')`,
+    [userId, body.name, body.email || null, body.phoneNumber, body.age, body.companyId, hashPassword(body.password)],
+  );
+  await client.query(
+    `INSERT INTO company_assignments (user_id, company_id) VALUES ($1,$2)`,
+    [userId, body.companyId],
+  );
+  await client.query(
+    `INSERT INTO employees
+     (id, company_id, employee_number, id_card, name, contact, salary, site, role,
+      basic_salary, allowances, overtime, pf, esic, date_of_joining)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Security Guard',$9,0,0,0,0,CURRENT_DATE)`,
+    [employeeId, body.companyId, employeeNumber, idCard, body.name, body.phoneNumber, basicSalary, body.site || "Unassigned", basicSalary],
+  );
+  return {
+    user: { id: userId, name: body.name, role: "SECURITY_GUARD" as const },
+    employee: { id: employeeId, name: body.name, role: "Security Guard" as const },
+  };
 }
 
 function parseBody<T>(schema: z.ZodType<T>, req: ApiRequest, res: ApiResponse) {
@@ -545,36 +595,57 @@ export async function handleManagement(req: ApiRequest, res: ApiResponse): Promi
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      const userId = `user-${randomBytes(8).toString("hex")}`;
-      const employeeId = `employee-${randomBytes(8).toString("hex")}`;
-      const employeeNumber = `EMP-${randomBytes(4).toString("hex").toUpperCase()}`;
-      const idCard = `ID-${randomBytes(4).toString("hex").toUpperCase()}`;
-      await client.query(
-        `INSERT INTO users
-         (id, name, email, mobile_number, age, company_id, password_hash, role)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,'SECURITY_GUARD')`,
-        [userId, body.name, body.email || null, body.phoneNumber, body.age ?? null, company.id, hashPassword(body.password)],
-      );
-      await client.query(
-        `INSERT INTO company_assignments (user_id, company_id) VALUES ($1,$2)`,
-        [userId, company.id],
-      );
-      await client.query(
-        `INSERT INTO employees
-         (id, company_id, employee_number, id_card, name, contact, salary, site, role,
-          basic_salary, allowances, overtime, pf, esic, date_of_joining)
-         VALUES ($1,$2,$3,$4,$5,$6,0,'Unassigned','Security Guard',0,0,0,0,0,CURRENT_DATE)`,
-        [employeeId, company.id, employeeNumber, idCard, body.name, body.phoneNumber],
-      );
+      const created = await createGuardAccount(client, { ...body, companyId: company.id });
       await client.query("COMMIT");
       res.status(201).json({
         message: "Security Guard account created.",
         companyId: company.id,
-        user: { id: userId, name: body.name, role: "SECURITY_GUARD" },
+        ...created,
       });
     } catch (error) {
       await client.query("ROLLBACK");
       logger.error({ err: error }, "Guard registration failed");
+      sendError(res, 500, "REGISTRATION_FAILED", "Unable to create the account.");
+    } finally {
+      client.release();
+    }
+    return true;
+  }
+
+  params = route(req, "POST", "/companies/:companyId/guard-accounts");
+  if (params) {
+    req.params = params;
+    if (!(await authenticate(req, res)) || !requireRole(req, res, "ADMIN", "SUPERVISOR")) return true;
+    if (!(await canAccessCompany(req.auth!, req.params.companyId))) {
+      sendError(res, 403, "FORBIDDEN", "This company is outside your assigned companies.");
+      return true;
+    }
+    const body = parseBody(guardEmployeeRegistrationSchema, req, res);
+    if (!body) return true;
+    const existing = await pool.query(
+      "SELECT 1 FROM users WHERE mobile_number = $1 OR (email IS NOT NULL AND lower(email) = lower($2)) LIMIT 1",
+      [body.phoneNumber, body.email || null],
+    );
+    if (existing.rowCount) {
+      sendError(res, 409, "ACCOUNT_EXISTS", "That phone number or email is already registered.");
+      return true;
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const created = await createGuardAccount(client, {
+        ...body,
+        companyId: req.params.companyId,
+      });
+      await client.query("COMMIT");
+      res.status(201).json({
+        message: "Security Guard account created.",
+        companyId: req.params.companyId,
+        ...created,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error({ err: error }, "Guard employee account creation failed");
       sendError(res, 500, "REGISTRATION_FAILED", "Unable to create the account.");
     } finally {
       client.release();

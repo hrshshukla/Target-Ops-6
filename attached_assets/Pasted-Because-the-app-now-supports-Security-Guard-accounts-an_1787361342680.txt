@@ -1,0 +1,53 @@
+Because the app now supports Security Guard accounts and guard-specific APIs have been added, we need to fix the account creation flow.
+
+There are two ways to create a Security Guard account:
+
+Supervisor/Admin → Add Employee
+A supervisor or admin can click the Add Employee button from inside a specific company.
+If the selected role is Security Guard, this should create a complete Security Guard account.
+Security Guard → Create New Account
+A guard can open the Create New Account page and register themselves.
+This also creates a complete Security Guard account.
+Important: Both flows must create the same type of account
+
+The Add Employee (Security Guard) form and Create New Account form should use the same required account details:
+
+Name
+Phone Number
+Age
+Password
+Email (optional)
+Security Guard role
+Company Code behavior
+
+There is only one difference between the two flows:
+
+Create New Account page:
+
+Show a required Company Code field.
+The guard enters a code such as ISF, TIS, TSSM, TISF, or KE.
+Use that code to determine the guard's company.
+
+Add Employee → Security Guard:
+
+Do NOT show the Company Code field.
+The company is already known because the admin/supervisor clicked Add Employee from a specific company.
+Automatically use that selected company's companyId.
+The user should not have to enter or select a company manually.
+Backend behavior
+
+Make sure both flows ultimately create the same complete Security Guard data:
+
+users record with role SECURITY_GUARD
+Phone number as the guard's login identifier
+Password stored using the existing password hashing system
+Correct company_id
+company_assignments record
+Corresponding employees record with role Security Guard
+
+Do not create one type of guard account for self-registration and a different/incomplete type for Add Employee.
+
+In short:
+Create Account = same guard account creation logic + guard enters Company Code.
+
+Add Employee → Security Guard = same guard account creation logic + company is automatically taken from the currently selected company, so Company Code is hidden.
